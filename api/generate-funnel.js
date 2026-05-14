@@ -5,7 +5,7 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
 
   return {
     ...currentData,
-
+    
     creator: {
       ...creator,
       name: 'Maya Brooks',
