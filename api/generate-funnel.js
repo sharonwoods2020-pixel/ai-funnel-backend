@@ -99,6 +99,22 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
 }
 
 export default async function handler(req, res) {
+
+  // =========================================
+  // CORS FIX
+  // =========================================
+
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization'
+  )
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({
       error: 'Method not allowed',
@@ -106,6 +122,9 @@ export default async function handler(req, res) {
   }
 
   try {
+
+    console.log('Backend endpoint working')
+
     const { currentData, generationInputs } = req.body
 
     const niche = generationInputs?.niche || 'beauty'
@@ -224,6 +243,7 @@ Return ONLY this JSON structure:
     })
 
     if (!aiResponse.ok) {
+
       const fallbackData = fallbackFunnel({
         currentData,
         niche,
@@ -235,7 +255,11 @@ Return ONLY this JSON structure:
     }
 
     const aiResult = await aiResponse.json()
+
+    console.log('AI RESULT:', aiResult)
+
     const rawText = aiResult.output_text || ''
+
     const aiData = JSON.parse(rawText)
 
     const generatedData = {
@@ -244,7 +268,11 @@ Return ONLY this JSON structure:
     }
 
     return res.status(200).json(generatedData)
+
   } catch (error) {
+
+    console.log('SERVER ERROR:', error)
+
     const { currentData, generationInputs } = req.body || {}
 
     const fallbackData = fallbackFunnel({
