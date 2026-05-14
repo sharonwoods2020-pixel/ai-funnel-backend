@@ -1,4 +1,5 @@
-import { PRODUCT_INTELLIGENCE } from '../data/productIntelligence.js' 
+import { PRODUCT_INTELLIGENCE } from '../data/productIntelligence.js'
+import { TEMPLATE_INTELLIGENCE } from '../data/templateIntelligence.js'
 
 const buildPromptLayer = ({ niche, problem, audience }) => {
   return `You are generating a mobile-first creator funnel for a real product-based business.
@@ -184,6 +185,21 @@ const getIntelligentProducts = ({ nicheCategory, productRoute }) => {
   )
 }
 
+const getTemplateIntelligence = ({ nicheCategory, productRoute }) => {
+  return (
+    TEMPLATE_INTELLIGENCE?.[nicheCategory]?.[productRoute] ||
+    TEMPLATE_INTELLIGENCE?.[nicheCategory]?.luxury ||
+    TEMPLATE_INTELLIGENCE?.[nicheCategory]?.glam ||
+    TEMPLATE_INTELLIGENCE?.skincare?.luxury ||
+    {
+      templateId: 'default-creator-funnel',
+      visualTone: 'clean, modern, creator-focused',
+      layoutStyle: 'mobile-first creator funnel',
+      colorMood: 'white, black, soft accent',
+    }
+  )
+}
+
 const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
   const nicheCategory = getNicheCategory(niche)
   const productRoute = getProblemRoute({
@@ -192,8 +208,15 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
     niche,
   })
 
+  const templateData = getTemplateIntelligence({
+    nicheCategory,
+    productRoute,
+  })
+
   return {
     ...currentData,
+
+    template: templateData,
 
     creator: {
       name: 'Maya Brooks',
@@ -388,6 +411,7 @@ const normalizeAiFunnel = ({
   problem,
   audience,
   intelligentProducts,
+  templateData,
 }) => {
   const fallback = fallbackFunnel({
     currentData,
@@ -406,6 +430,7 @@ const normalizeAiFunnel = ({
   }))
 
   return {
+    template: templateData,
     creator: enforceCreator(aiData?.creator, fallback.creator),
     hero: enforceHero(aiData?.hero, fallback.hero),
     problems: enforceProblems(aiData?.problems, fallback.problems),
@@ -454,9 +479,15 @@ export default async function handler(req, res) {
       productRoute,
     })
 
+    const templateData = getTemplateIntelligence({
+      nicheCategory,
+      productRoute,
+    })
+
     console.log('PRODUCT INTELLIGENCE CATEGORY:', nicheCategory)
     console.log('PRODUCT INTELLIGENCE ROUTE:', productRoute)
     console.log('CONTROLLED PRODUCTS:', intelligentProducts)
+    console.log('TEMPLATE INTELLIGENCE:', templateData)
 
     const privatePrompt = buildPromptLayer({
       niche,
@@ -530,6 +561,7 @@ export default async function handler(req, res) {
       problem,
       audience,
       intelligentProducts,
+      templateData,
     })
 
     console.log('FINAL ENFORCED JSON READY')
