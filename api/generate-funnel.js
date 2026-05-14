@@ -2,7 +2,7 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
   const creator = currentData?.creator || {}
   const hero = currentData?.hero || {}
   const cta = currentData?.cta || {}
- 
+
   return {
     ...currentData,
 
@@ -244,6 +244,11 @@ Return ONLY this JSON structure:
 
     if (!aiResponse.ok) {
 
+      console.log(
+        'OPENAI REQUEST FAILED:',
+        await aiResponse.text()
+      )
+
       const fallbackData = fallbackFunnel({
         currentData,
         niche,
@@ -256,7 +261,10 @@ Return ONLY this JSON structure:
 
     const aiResult = await aiResponse.json()
 
-    console.log('AI RESULT:', aiResult)
+    console.log(
+      'AI RESULT:',
+      JSON.stringify(aiResult, null, 2)
+    )
 
     const rawText = aiResult.output_text || ''
 
