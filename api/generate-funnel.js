@@ -1,3 +1,5 @@
+import { PRODUCT_INTELLIGENCE } from '../data/productIntelligence.js'
+
 const buildPromptLayer = ({ niche, problem, audience }) => {
   return `You are generating a mobile-first creator funnel for a real product-based business.
 
@@ -8,7 +10,7 @@ INPUTS:
 
 IMPORTANT:
 Do NOT use placeholder words like "niche", "problem", "audience", "456", "789", "string", or "Product".
-Use the actual input meaning to create realistic creator branding, product names, hooks, and benefits.
+Use the actual input meaning to create realistic creator branding, hooks, and benefits.
 
 STYLE:
 - Write like a premium creator brand.
@@ -19,26 +21,6 @@ STYLE:
 - Do not mention AI.
 - Do not use markdown.
 - Return ONLY valid JSON.
-
-CREATOR RULES:
-Create a realistic creator name, handle, and tagline that fits the niche.
-The handle should feel brandable and modern.
-
-HERO RULES:
-The headline should NOT simply repeat the inputs.
-It should reposition the problem as a desirable transformation.
-
-PROBLEM CARD RULES:
-Each problem must be an object with icon, title, and description.
-Do NOT return plain strings.
-
-ROUTINE RULES:
-Each routine step must be an object with step, title, and tip.
-Do NOT return plain strings.
-
-PRODUCT RULES:
-Create believable product-style recommendations that match the niche and problem.
-Each product must include id, image, name, benefit, cta, and href.
 
 RETURN ONLY THIS EXACT JSON STRUCTURE:
 {
@@ -53,70 +35,17 @@ RETURN ONLY THIS EXACT JSON STRUCTURE:
     "ctaLabel": "short action CTA"
   },
   "problems": [
-    {
-      "icon": "emoji",
-      "title": "short problem title",
-      "description": "short emotional description"
-    },
-    {
-      "icon": "emoji",
-      "title": "short problem title",
-      "description": "short emotional description"
-    },
-    {
-      "icon": "emoji",
-      "title": "short problem title",
-      "description": "short emotional description"
-    },
-    {
-      "icon": "emoji",
-      "title": "short problem title",
-      "description": "short emotional description"
-    }
+    { "icon": "emoji", "title": "short problem title", "description": "short emotional description" },
+    { "icon": "emoji", "title": "short problem title", "description": "short emotional description" },
+    { "icon": "emoji", "title": "short problem title", "description": "short emotional description" },
+    { "icon": "emoji", "title": "short problem title", "description": "short emotional description" }
   ],
   "routineSteps": [
-    {
-      "step": 1,
-      "title": "short step title",
-      "tip": "short practical tip"
-    },
-    {
-      "step": 2,
-      "title": "short step title",
-      "tip": "short practical tip"
-    },
-    {
-      "step": 3,
-      "title": "short step title",
-      "tip": "short practical tip"
-    }
+    { "step": 1, "title": "short step title", "tip": "short practical tip" },
+    { "step": 2, "title": "short step title", "tip": "short practical tip" },
+    { "step": 3, "title": "short step title", "tip": "short practical tip" }
   ],
-  "products": [
-    {
-      "id": "p1",
-      "image": "/images/product-1.webp",
-      "name": "realistic product name",
-      "benefit": "short product benefit",
-      "cta": "Shop Now",
-      "href": "#"
-    },
-    {
-      "id": "p2",
-      "image": "/images/product-2.webp",
-      "name": "realistic product name",
-      "benefit": "short product benefit",
-      "cta": "Shop Now",
-      "href": "#"
-    },
-    {
-      "id": "p3",
-      "image": "/images/product-3.webp",
-      "name": "realistic product name",
-      "benefit": "short product benefit",
-      "cta": "Shop Now",
-      "href": "#"
-    }
-  ],
+  "products": [],
   "cta": {
     "barTagline": "short trust-building line",
     "finalHeadline": "short final CTA headline",
@@ -124,6 +53,37 @@ RETURN ONLY THIS EXACT JSON STRUCTURE:
     "finalLabel": "short final CTA label"
   }
 }`
+}
+
+const getNicheCategory = (niche = '') => {
+  const nicheLower = niche.toLowerCase()
+
+  if (nicheLower.includes('beard') || nicheLower.includes('barber')) {
+    return 'beard'
+  }
+
+  if (nicheLower.includes('lash')) {
+    return 'lashes'
+  }
+
+  if (
+    nicheLower.includes('fragrance') ||
+    nicheLower.includes('perfume') ||
+    nicheLower.includes('cologne')
+  ) {
+    return 'fragrance'
+  }
+
+  return 'skincare'
+}
+
+const getIntelligentProducts = (nicheCategory) => {
+  return (
+    PRODUCT_INTELLIGENCE?.[nicheCategory]?.luxury ||
+    PRODUCT_INTELLIGENCE?.[nicheCategory]?.glam ||
+    PRODUCT_INTELLIGENCE?.skincare?.luxury ||
+    []
+  )
 }
 
 const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
@@ -185,32 +145,14 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
       },
     ],
 
-    products: [
-      {
-        id: 'p1',
-        image: '/images/product-1.webp',
-        name: `${niche} Starter Pick`,
-        benefit: `Helpful for ${problem}`,
-        cta: 'Shop Now',
-        href: '#',
-      },
-      {
-        id: 'p2',
-        image: '/images/product-2.webp',
-        name: `${niche} Daily Essential`,
-        benefit: `Easy for ${audience}`,
-        cta: 'Shop Now',
-        href: '#',
-      },
-      {
-        id: 'p3',
-        image: '/images/product-3.webp',
-        name: `${niche} Routine Booster`,
-        benefit: 'Adds support to the routine',
-        cta: 'Shop Now',
-        href: '#',
-      },
-    ],
+    products: getIntelligentProducts(getNicheCategory(niche)).map((product, index) => ({
+      id: `p${index + 1}`,
+      image: product.image,
+      name: product.name,
+      benefit: product.benefit,
+      cta: 'Shop Now',
+      href: '#',
+    })),
 
     cta: {
       barTagline: `A simple ${niche} routine for ${audience}.`,
@@ -331,7 +273,14 @@ const enforceCTA = (cta, fallback) => ({
   finalLabel: ensureString(cta?.finalLabel, fallback.finalLabel),
 })
 
-const normalizeAiFunnel = ({ currentData, aiData, niche, problem, audience }) => {
+const normalizeAiFunnel = ({
+  currentData,
+  aiData,
+  niche,
+  problem,
+  audience,
+  intelligentProducts,
+}) => {
   const fallback = fallbackFunnel({
     currentData,
     niche,
@@ -339,12 +288,21 @@ const normalizeAiFunnel = ({ currentData, aiData, niche, problem, audience }) =>
     audience,
   })
 
+  const controlledProducts = intelligentProducts.map((product, index) => ({
+    id: `p${index + 1}`,
+    image: product.image,
+    name: product.name,
+    benefit: product.benefit,
+    cta: 'Shop Now',
+    href: '#',
+  }))
+
   return {
     creator: enforceCreator(aiData?.creator, fallback.creator),
     hero: enforceHero(aiData?.hero, fallback.hero),
     problems: enforceProblems(aiData?.problems, fallback.problems),
     routineSteps: enforceRoutineSteps(aiData?.routineSteps, fallback.routineSteps),
-    products: enforceProducts(aiData?.products, fallback.products),
+    products: enforceProducts(controlledProducts, fallback.products),
     cta: enforceCTA(aiData?.cta, fallback.cta),
   }
 }
@@ -375,6 +333,12 @@ export default async function handler(req, res) {
     const niche = generationInputs?.niche || 'beauty'
     const problem = generationInputs?.problem || 'skin concerns'
     const audience = generationInputs?.audience || 'busy beauty shoppers'
+
+    const nicheCategory = getNicheCategory(niche)
+    const intelligentProducts = getIntelligentProducts(nicheCategory)
+
+    console.log('PRODUCT INTELLIGENCE CATEGORY:', nicheCategory)
+    console.log('CONTROLLED PRODUCTS:', intelligentProducts)
 
     const privatePrompt = buildPromptLayer({
       niche,
@@ -447,6 +411,7 @@ export default async function handler(req, res) {
       niche,
       problem,
       audience,
+      intelligentProducts,
     })
 
     console.log('FINAL ENFORCED JSON READY')
