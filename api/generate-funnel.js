@@ -10,7 +10,7 @@ export default async function handler(req, res) {
 
     const niche = generationInputs?.niche || 'beauty'
     const problem = generationInputs?.problem || 'skin concerns'
-    const audience = generationInputs?.audience || 'busy beauty shoppers'
+    const audience = generationInputs?.audience || 'busy beauty shoppers' 
 
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
