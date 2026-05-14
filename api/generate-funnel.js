@@ -1,4 +1,4 @@
-import { PRODUCT_INTELLIGENCE } from '../data/productIntelligence.js'
+import { PRODUCT_INTELLIGENCE } from '../data/productIntelligence.js' 
 
 const buildPromptLayer = ({ niche, problem, audience }) => {
   return `You are generating a mobile-first creator funnel for a real product-based business.
