@@ -58,11 +58,17 @@ RETURN ONLY THIS EXACT JSON STRUCTURE:
 const getNicheCategory = (niche = '') => {
   const nicheLower = niche.toLowerCase()
 
-  if (nicheLower.includes('beard') || nicheLower.includes('barber')) {
+  if (
+    nicheLower.includes('beard') ||
+    nicheLower.includes('barber')
+  ) {
     return 'beard'
   }
 
-  if (nicheLower.includes('lash')) {
+  if (
+    nicheLower.includes('lash') ||
+    nicheLower.includes('lashes')
+  ) {
     return 'lashes'
   }
 
@@ -74,11 +80,103 @@ const getNicheCategory = (niche = '') => {
     return 'fragrance'
   }
 
+  if (
+    nicheLower.includes('skin') ||
+    nicheLower.includes('skincare') ||
+    nicheLower.includes('face') ||
+    nicheLower.includes('beauty')
+  ) {
+    return 'skincare'
+  }
+
   return 'skincare'
 }
 
-const getIntelligentProducts = (nicheCategory) => {
+const getProblemRoute = ({ nicheCategory, problem = '', niche = '' }) => {
+  const problemLower = problem.toLowerCase()
+  const nicheLower = niche.toLowerCase()
+  const combined = `${nicheLower} ${problemLower}`
+
+  if (nicheCategory === 'skincare') {
+    if (
+      combined.includes('acne') ||
+      combined.includes('breakout') ||
+      combined.includes('blemish') ||
+      combined.includes('pimple')
+    ) {
+      return 'acne'
+    }
+
+    if (
+      combined.includes('dark spot') ||
+      combined.includes('dark spots') ||
+      combined.includes('hyperpigmentation') ||
+      combined.includes('discoloration') ||
+      combined.includes('uneven tone')
+    ) {
+      return 'darkspots'
+    }
+
+    if (
+      combined.includes('aging') ||
+      combined.includes('anti aging') ||
+      combined.includes('anti-aging') ||
+      combined.includes('wrinkle') ||
+      combined.includes('fine line') ||
+      combined.includes('firming')
+    ) {
+      return 'antiaging'
+    }
+
+    return 'luxury'
+  }
+
+  if (nicheCategory === 'beard') {
+    if (
+      combined.includes('patchy') ||
+      combined.includes('thin beard') ||
+      combined.includes('beard growth') ||
+      combined.includes('fuller beard')
+    ) {
+      return 'patchy'
+    }
+
+    return 'luxury'
+  }
+
+  if (nicheCategory === 'lashes') {
+    if (
+      combined.includes('growth') ||
+      combined.includes('thin lashes') ||
+      combined.includes('sparse lashes') ||
+      combined.includes('lash fallout') ||
+      combined.includes('weak lashes')
+    ) {
+      return 'growth'
+    }
+
+    return 'glam'
+  }
+
+  if (nicheCategory === 'fragrance') {
+    if (
+      combined.includes('everyday') ||
+      combined.includes('daily') ||
+      combined.includes('clean') ||
+      combined.includes('fresh')
+    ) {
+      return 'everyday'
+    }
+
+    return 'luxury'
+  }
+
+  return 'luxury'
+}
+
+const getIntelligentProducts = ({ nicheCategory, productRoute }) => {
   return (
+    PRODUCT_INTELLIGENCE?.[nicheCategory]?.[productRoute] ||
     PRODUCT_INTELLIGENCE?.[nicheCategory]?.luxury ||
     PRODUCT_INTELLIGENCE?.[nicheCategory]?.glam ||
     PRODUCT_INTELLIGENCE?.skincare?.luxury ||
@@ -87,6 +185,13 @@ const getIntelligentProducts = (nicheCategory) => {
 }
 
 const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
+  const nicheCategory = getNicheCategory(niche)
+  const productRoute = getProblemRoute({
+    nicheCategory,
+    problem,
+    niche,
+  })
+
   return {
     ...currentData,
 
@@ -145,7 +250,10 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
       },
     ],
 
-    products: getIntelligentProducts(getNicheCategory(niche)).map((product, index) => ({
+    products: getIntelligentProducts({
+      nicheCategory,
+      productRoute,
+    }).map((product, index) => ({
       id: `p${index + 1}`,
       image: product.image,
       name: product.name,
@@ -335,9 +443,19 @@ export default async function handler(req, res) {
     const audience = generationInputs?.audience || 'busy beauty shoppers'
 
     const nicheCategory = getNicheCategory(niche)
-    const intelligentProducts = getIntelligentProducts(nicheCategory)
+    const productRoute = getProblemRoute({
+      nicheCategory,
+      problem,
+      niche,
+    })
+
+    const intelligentProducts = getIntelligentProducts({
+      nicheCategory,
+      productRoute,
+    })
 
     console.log('PRODUCT INTELLIGENCE CATEGORY:', nicheCategory)
+    console.log('PRODUCT INTELLIGENCE ROUTE:', productRoute)
     console.log('CONTROLLED PRODUCTS:', intelligentProducts)
 
     const privatePrompt = buildPromptLayer({
