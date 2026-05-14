@@ -2,7 +2,7 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
   const creator = currentData?.creator || {}
   const hero = currentData?.hero || {}
   const cta = currentData?.cta || {}
-
+ 
   return {
     ...currentData,
 
