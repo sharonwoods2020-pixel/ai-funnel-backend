@@ -1,3 +1,68 @@
+const buildPromptLayer = ({ niche, problem, audience }) => {
+  return `Create a high-converting creator product funnel.
+
+INPUTS:
+- Niche: ${niche}
+- Problem: ${problem}
+- Audience: ${audience}
+
+PROMPT LAYER RULES:
+- Write for a mobile-first creator funnel.
+- Use clear, benefit-driven language.
+- Make the audience feel seen quickly.
+- Keep headlines punchy.
+- Keep descriptions short.
+- Make CTAs action-oriented.
+- Match the tone to the niche.
+- Do not sound generic.
+- Do not mention AI.
+- Do not include markdown.
+- Return only valid JSON.
+
+FUNNEL STRATEGY:
+- Hero should create immediate desire.
+- Problem cards should name the emotional/friction points.
+- Routine steps should feel simple and doable.
+- Products should sound like curated recommendations.
+- Final CTA should move the viewer toward action.
+
+RETURN ONLY THIS JSON SHAPE:
+{
+  "creator": {
+    "name": "string",
+    "handle": "string",
+    "tagline": "string"
+  },
+  "hero": {
+    "headline": "string",
+    "subheadline": "string",
+    "ctaLabel": "string"
+  },
+  "problems": [
+    { "icon": "emoji", "title": "string", "description": "string" },
+    { "icon": "emoji", "title": "string", "description": "string" },
+    { "icon": "emoji", "title": "string", "description": "string" },
+    { "icon": "emoji", "title": "string", "description": "string" }
+  ],
+  "routineSteps": [
+    { "step": 1, "title": "string", "tip": "string" },
+    { "step": 2, "title": "string", "tip": "string" },
+    { "step": 3, "title": "string", "tip": "string" }
+  ],
+  "products": [
+    { "id": "p1", "image": "/images/product-1.webp", "name": "string", "benefit": "string", "cta": "Shop Now", "href": "#" },
+    { "id": "p2", "image": "/images/product-2.webp", "name": "string", "benefit": "string", "cta": "Shop Now", "href": "#" },
+    { "id": "p3", "image": "/images/product-3.webp", "name": "string", "benefit": "string", "cta": "Shop Now", "href": "#" }
+  ],
+  "cta": {
+    "barTagline": "string",
+    "finalHeadline": "string",
+    "finalSubtext": "string",
+    "finalLabel": "string"
+  }
+}`
+}
+
 const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
   const creator = currentData?.creator || {}
   const hero = currentData?.hero || {}
@@ -164,24 +229,27 @@ const normalizeAiFunnel = ({ currentData, aiData, niche, problem, audience }) =>
       ...(aiData?.hero || {}),
     },
 
-    problems: Array.isArray(aiData?.problems) && aiData.problems.length
-      ? aiData.problems
-      : fallback.problems,
+    problems:
+      Array.isArray(aiData?.problems) && aiData.problems.length
+        ? aiData.problems
+        : fallback.problems,
 
-    routineSteps: Array.isArray(aiData?.routineSteps) && aiData.routineSteps.length
-      ? aiData.routineSteps
-      : fallback.routineSteps,
+    routineSteps:
+      Array.isArray(aiData?.routineSteps) && aiData.routineSteps.length
+        ? aiData.routineSteps
+        : fallback.routineSteps,
 
-    products: Array.isArray(aiData?.products) && aiData.products.length
-      ? aiData.products.map((product, index) => ({
-          id: product?.id || `p${index + 1}`,
-          image: product?.image || `/images/product-${index + 1}.webp`,
-          name: product?.name || `${niche} Product ${index + 1}`,
-          benefit: product?.benefit || `Helpful for ${problem}`,
-          cta: product?.cta || 'Shop Now',
-          href: product?.href || '#',
-        }))
-      : fallback.products,
+    products:
+      Array.isArray(aiData?.products) && aiData.products.length
+        ? aiData.products.map((product, index) => ({
+            id: product?.id || `p${index + 1}`,
+            image: product?.image || `/images/product-${index + 1}.webp`,
+            name: product?.name || `${niche} Product ${index + 1}`,
+            benefit: product?.benefit || `Helpful for ${problem}`,
+            cta: product?.cta || 'Shop Now',
+            href: product?.href || '#',
+          }))
+        : fallback.products,
 
     cta: {
       ...fallback.cta,
@@ -217,6 +285,12 @@ export default async function handler(req, res) {
     const problem = generationInputs?.problem || 'skin concerns'
     const audience = generationInputs?.audience || 'busy beauty shoppers'
 
+    const privatePrompt = buildPromptLayer({
+      niche,
+      problem,
+      audience,
+    })
+
     const aiResponse = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -229,108 +303,11 @@ export default async function handler(req, res) {
           {
             role: 'system',
             content:
-              'You are a private AI funnel engine. Return ONLY valid JSON. No markdown. No explanations. No text outside JSON.',
+              'You are a private AI funnel engine. Return only valid JSON. No markdown. No explanations.',
           },
           {
             role: 'user',
-            content: `Create a high-converting creator product funnel.
-
-Inputs:
-- Niche: ${niche}
-- Problem: ${problem}
-- Audience: ${audience}
-
-Rules:
-- Make the copy specific to the audience.
-- Use benefit-driven language.
-- Keep all text short enough for a mobile funnel.
-- Do not mention that you are AI.
-- Return only JSON matching this exact shape.
-
-JSON shape:
-{
-  "creator": {
-    "name": "string",
-    "handle": "string",
-    "tagline": "string"
-  },
-  "hero": {
-    "headline": "string",
-    "subheadline": "string",
-    "ctaLabel": "string"
-  },
-  "problems": [
-    {
-      "icon": "emoji",
-      "title": "string",
-      "description": "string"
-    },
-    {
-      "icon": "emoji",
-      "title": "string",
-      "description": "string"
-    },
-    {
-      "icon": "emoji",
-      "title": "string",
-      "description": "string"
-    },
-    {
-      "icon": "emoji",
-      "title": "string",
-      "description": "string"
-    }
-  ],
-  "routineSteps": [
-    {
-      "step": 1,
-      "title": "string",
-      "tip": "string"
-    },
-    {
-      "step": 2,
-      "title": "string",
-      "tip": "string"
-    },
-    {
-      "step": 3,
-      "title": "string",
-      "tip": "string"
-    }
-  ],
-  "products": [
-    {
-      "id": "p1",
-      "image": "/images/product-1.webp",
-      "name": "string",
-      "benefit": "string",
-      "cta": "Shop Now",
-      "href": "#"
-    },
-    {
-      "id": "p2",
-      "image": "/images/product-2.webp",
-      "name": "string",
-      "benefit": "string",
-      "cta": "Shop Now",
-      "href": "#"
-    },
-    {
-      "id": "p3",
-      "image": "/images/product-3.webp",
-      "name": "string",
-      "benefit": "string",
-      "cta": "Shop Now",
-      "href": "#"
-    }
-  ],
-  "cta": {
-    "barTagline": "string",
-    "finalHeadline": "string",
-    "finalSubtext": "string",
-    "finalLabel": "string"
-  }
-}`,
+            content: privatePrompt,
           },
         ],
       }),
