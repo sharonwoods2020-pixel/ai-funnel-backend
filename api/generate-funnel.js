@@ -5,7 +5,7 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
 
   return {
     ...currentData,
-    
+
     creator: {
       ...creator,
       name: 'Maya Brooks',
@@ -98,12 +98,99 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
   }
 }
 
+const extractOutputText = (aiResult) => {
+  if (typeof aiResult?.output_text === 'string') {
+    return aiResult.output_text
+  }
+
+  const output = aiResult?.output
+
+  if (!Array.isArray(output)) {
+    return ''
+  }
+
+  for (const item of output) {
+    const content = item?.content
+
+    if (!Array.isArray(content)) continue
+
+    for (const block of content) {
+      if (typeof block?.text === 'string') {
+        return block.text
+      }
+    }
+  }
+
+  return ''
+}
+
+const safeParseJson = (text) => {
+  if (typeof text !== 'string') return null
+
+  const cleaned = text
+    .replace(/^```json/i, '')
+    .replace(/^```/i, '')
+    .replace(/```$/i, '')
+    .trim()
+
+  try {
+    return JSON.parse(cleaned)
+  } catch (error) {
+    return null
+  }
+}
+
+const normalizeAiFunnel = ({ currentData, aiData, niche, problem, audience }) => {
+  const fallback = fallbackFunnel({
+    currentData,
+    niche,
+    problem,
+    audience,
+  })
+
+  return {
+    ...fallback,
+    ...aiData,
+
+    creator: {
+      ...fallback.creator,
+      ...(aiData?.creator || {}),
+      image: currentData?.creator?.image || fallback.creator.image,
+      videoSrc: currentData?.creator?.videoSrc || fallback.creator.videoSrc,
+    },
+
+    hero: {
+      ...fallback.hero,
+      ...(aiData?.hero || {}),
+    },
+
+    problems: Array.isArray(aiData?.problems) && aiData.problems.length
+      ? aiData.problems
+      : fallback.problems,
+
+    routineSteps: Array.isArray(aiData?.routineSteps) && aiData.routineSteps.length
+      ? aiData.routineSteps
+      : fallback.routineSteps,
+
+    products: Array.isArray(aiData?.products) && aiData.products.length
+      ? aiData.products.map((product, index) => ({
+          id: product?.id || `p${index + 1}`,
+          image: product?.image || `/images/product-${index + 1}.webp`,
+          name: product?.name || `${niche} Product ${index + 1}`,
+          benefit: product?.benefit || `Helpful for ${problem}`,
+          cta: product?.cta || 'Shop Now',
+          href: product?.href || '#',
+        }))
+      : fallback.products,
+
+    cta: {
+      ...fallback.cta,
+      ...(aiData?.cta || {}),
+    },
+  }
+}
+
 export default async function handler(req, res) {
-
-  // =========================================
-  // CORS FIX
-  // =========================================
-
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader(
@@ -122,7 +209,6 @@ export default async function handler(req, res) {
   }
 
   try {
-
     console.log('Backend endpoint working')
 
     const { currentData, generationInputs } = req.body
@@ -143,17 +229,25 @@ export default async function handler(req, res) {
           {
             role: 'system',
             content:
-              'You are an AI funnel copywriter. Return only valid JSON. Do not include markdown, comments, or explanation.',
+              'You are a private AI funnel engine. Return ONLY valid JSON. No markdown. No explanations. No text outside JSON.',
           },
           {
             role: 'user',
-            content: `Create a creator product funnel.
+            content: `Create a high-converting creator product funnel.
 
-Niche: ${niche}
-Problem: ${problem}
-Audience: ${audience}
+Inputs:
+- Niche: ${niche}
+- Problem: ${problem}
+- Audience: ${audience}
 
-Return ONLY this JSON structure:
+Rules:
+- Make the copy specific to the audience.
+- Use benefit-driven language.
+- Keep all text short enough for a mobile funnel.
+- Do not mention that you are AI.
+- Return only JSON matching this exact shape.
+
+JSON shape:
 {
   "creator": {
     "name": "string",
@@ -243,7 +337,6 @@ Return ONLY this JSON structure:
     })
 
     if (!aiResponse.ok) {
-
       console.log(
         'OPENAI REQUEST FAILED:',
         await aiResponse.text()
@@ -266,19 +359,35 @@ Return ONLY this JSON structure:
       JSON.stringify(aiResult, null, 2)
     )
 
-    const rawText = aiResult.output_text || ''
+    const rawText = extractOutputText(aiResult)
 
-    const aiData = JSON.parse(rawText)
+    console.log('AI RAW TEXT:', rawText)
 
-    const generatedData = {
-      ...currentData,
-      ...aiData,
+    const aiData = safeParseJson(rawText)
+
+    if (!aiData) {
+      console.log('AI JSON PARSE FAILED')
+
+      const fallbackData = fallbackFunnel({
+        currentData,
+        niche,
+        problem,
+        audience,
+      })
+
+      return res.status(200).json(fallbackData)
     }
 
+    const generatedData = normalizeAiFunnel({
+      currentData,
+      aiData,
+      niche,
+      problem,
+      audience,
+    })
+
     return res.status(200).json(generatedData)
-
   } catch (error) {
-
     console.log('SERVER ERROR:', error)
 
     const { currentData, generationInputs } = req.body || {}
