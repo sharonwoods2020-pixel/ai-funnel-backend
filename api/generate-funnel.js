@@ -16,11 +16,16 @@ Create copy that feels specific, polished, trustworthy, and conversion-focused.
 
 CREATOR PERSONALITY:
 Choose a realistic creator brand voice based on the niche:
+- hair: trendy, transformational, confidence-focused, beauty-influencer tone
+- barber: clean, masculine, sharp, grooming-focused
+- nails: stylish, glam, expressive, self-care focused
+- spa: calming, relaxing, wellness-focused, luxury self-care tone
+- lashes: glam, beauty-forward, confident, feminine
+- makeup: bold, artistic, trendy, creator-beauty tone
+- tattoo: edgy, expressive, artistic, alternative lifestyle tone
 - skincare: soft, trustworthy, polished, routine-focused
-- lashes: glam, confident, beauty-forward
-- beard/barber: clean, confident, masculine, grooming-focused
-- fragrance: elegant, lifestyle-driven, aspirational
-- general beauty: modern, helpful, creator-led
+- gift baskets: warm, thoughtful, celebratory, emotional gifting tone
+- perfume and cologne: elegant, luxury-driven, aspirational lifestyle tone
 
 CONVERSION RULES:
 - Lead with the pain point, not the product.
