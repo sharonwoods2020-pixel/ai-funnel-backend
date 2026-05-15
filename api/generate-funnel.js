@@ -9,26 +9,45 @@ INPUTS:
 - Problem: ${problem}
 - Audience: ${audience}
 
-IMPORTANT:
-Do NOT use placeholder words like "niche", "problem", "audience", "456", "789", "string", or "Product".
-Use the actual input meaning to create realistic creator branding, hooks, and benefits.
+PRIVATE STRATEGY:
+Use a premium creator-commerce funnel structure.
+Match the funnel copy to the audience's emotional problem, desired outcome, and buying intent.
+Create copy that feels specific, polished, trustworthy, and conversion-focused.
 
-STYLE:
-- Write like a premium creator brand.
-- Make the copy specific, emotional, and conversion-focused.
-- Use short mobile-friendly copy.
-- Make the audience feel understood.
-- Avoid hype claims, medical claims, income claims, or guaranteed results.
+CREATOR PERSONALITY:
+Choose a realistic creator brand voice based on the niche:
+- skincare: soft, trustworthy, polished, routine-focused
+- lashes: glam, confident, beauty-forward
+- beard/barber: clean, confident, masculine, grooming-focused
+- fragrance: elegant, lifestyle-driven, aspirational
+- general beauty: modern, helpful, creator-led
+
+CONVERSION RULES:
+- Lead with the pain point, not the product.
+- Make the offer feel simple and easy to start.
+- Use short mobile-friendly sentences.
+- Make the CTA feel natural, not pushy.
+- Avoid exaggerated promises.
+- Avoid medical claims.
+- Avoid income claims.
+- Avoid guaranteed results.
 - Do not mention AI.
 - Do not use markdown.
 - Return ONLY valid JSON.
+
+COPY STYLE:
+- Premium but simple.
+- Emotional but not dramatic.
+- Specific to the niche, problem, and audience.
+- Written like a real creator recommending a routine.
+- No placeholder words like "niche", "problem", "audience", "456", "789", "string", or "Product".
 
 RETURN ONLY THIS EXACT JSON STRUCTURE:
 {
   "creator": {
     "name": "realistic creator name",
     "handle": "@realisticbrandhandle",
-    "tagline": "short brand tagline"
+    "tagline": "short creator brand tagline"
   },
   "hero": {
     "headline": "short transformation-driven headline",
@@ -55,7 +74,6 @@ RETURN ONLY THIS EXACT JSON STRUCTURE:
   }
 }`
 }
-
 const getNicheCategory = (niche = '') => {
   const nicheLower = niche.toLowerCase()
 
