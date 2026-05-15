@@ -27,6 +27,22 @@ Choose a realistic creator brand voice based on the niche:
 - gift baskets: warm, thoughtful, celebratory, emotional gifting tone
 - perfume and cologne: elegant, luxury-driven, aspirational lifestyle tone
 
+EMOTIONAL ANGLE INTELLIGENCE:
+Choose the strongest emotional angle based on the niche, problem, and audience.
+Use the angle silently to shape the hook, hero, problem cards, routine, and CTA.
+
+Available emotional angles:
+- luxury: premium, elegant, elevated, aspirational
+- confidence: self-assured, beauty transformation, feeling seen
+- recovery: repair, reset, restoration, getting back on track
+- self-care: calming, personal care, daily ritual, gentle improvement
+- status: high-end, exclusive, standout, polished identity
+- simplicity: easy, clear, beginner-friendly, low-overwhelm
+- speed: quick-start, time-saving, fast routine, busy lifestyle
+- professional: expert, polished, service-provider approved, serious quality
+- romantic: soft, feminine, intimate, date-night, attraction-focused
+- wellness: balanced, calm, body-focused, lifestyle improvement
+
 CONVERSION RULES:
 - Lead with the pain point, not the product.
 - Make the offer feel simple and easy to start.
