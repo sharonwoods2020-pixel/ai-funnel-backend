@@ -382,8 +382,11 @@ const enforceHero = (hero, fallback) => ({
   headline: ensureString(hero?.headline, fallback.headline),
   subheadline: ensureString(hero?.subheadline, fallback.subheadline),
   ctaLabel: ensureString(hero?.ctaLabel, fallback.ctaLabel),
+  creatorMicroScript: ensureString(
+    hero?.creatorMicroScript,
+    fallback?.creatorMicroScript || ''
+  ),
 })
-
 const enforceProblems = (problems, fallback) => {
   return ensureArray(problems, fallback).map((item, index) => {
     if (typeof item === 'string') {
