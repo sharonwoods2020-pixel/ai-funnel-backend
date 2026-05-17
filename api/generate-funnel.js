@@ -529,11 +529,18 @@ export default async function handler(req, res) {
     console.log('CONTROLLED PRODUCTS:', intelligentProducts)
     console.log('TEMPLATE INTELLIGENCE:', templateData)
 
-    const privatePrompt = buildPromptLayer({
-      niche,
-      problem,
-      audience,
-    })
+const privatePrompt = buildFunnelPrompt({
+  creatorName: currentData?.creator?.name || 'Creator',
+  creatorType: niche,
+  niche,
+  productName: intelligentProducts?.[0]?.name || 'Featured Product',
+  productDescription:
+    intelligentProducts?.[0]?.benefit || problem,
+  targetAudience: audience,
+  offerType: niche,
+  tone: templateData?.visualTone || 'premium',
+  callToAction: 'Shop The Routine ✦',
+})
 
     const aiResponse = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
