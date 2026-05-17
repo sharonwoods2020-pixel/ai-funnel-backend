@@ -485,7 +485,17 @@ const normalizeAiFunnel = ({
   fallback.routineSteps
 ),
     products: enforceProducts(controlledProducts, fallback.products),
-    cta: enforceCTA(aiData?.cta, fallback.cta),
+  cta: enforceCTA(
+  aiData?.finalCta
+    ? {
+        barTagline: fallback.cta.barTagline,
+        finalHeadline: aiData.finalCta.headline,
+        finalSubtext: aiData.finalCta.subtext,
+        finalLabel: aiData.finalCta.ctaLabel,
+      }
+    : aiData?.cta,
+  fallback.cta
+),
   }
 }
 
