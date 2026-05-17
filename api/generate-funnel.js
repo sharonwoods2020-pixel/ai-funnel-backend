@@ -480,7 +480,10 @@ const normalizeAiFunnel = ({
   aiData?.problemCards || aiData?.problems,
   fallback.problems
 ),
-    routineSteps: enforceRoutineSteps(aiData?.routineSteps, fallback.routineSteps),
+    routineSteps: enforceRoutineSteps(
+  aiData?.routine?.steps || aiData?.routineSteps,
+  fallback.routineSteps
+),
     products: enforceProducts(controlledProducts, fallback.products),
     cta: enforceCTA(aiData?.cta, fallback.cta),
   }
