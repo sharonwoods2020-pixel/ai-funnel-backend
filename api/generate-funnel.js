@@ -476,7 +476,10 @@ const normalizeAiFunnel = ({
     template: templateData,
     creator: enforceCreator(aiData?.creator, fallback.creator),
     hero: enforceHero(aiData?.hero, fallback.hero),
-    problems: enforceProblems(aiData?.problems, fallback.problems),
+    problems: enforceProblems(
+  aiData?.problemCards || aiData?.problems,
+  fallback.problems
+),
     routineSteps: enforceRoutineSteps(aiData?.routineSteps, fallback.routineSteps),
     products: enforceProducts(controlledProducts, fallback.products),
     cta: enforceCTA(aiData?.cta, fallback.cta),
