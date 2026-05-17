@@ -2,114 +2,14 @@ import { PRODUCT_INTELLIGENCE } from '../data/productIntelligence.js'
 import { TEMPLATE_INTELLIGENCE } from '../data/templateIntelligence.js'
 import { buildFunnelPrompt } from '../aiFunnelPrompt.js'
 
-const buildPromptLayer = ({ niche, problem, audience }) => {
-  return `You are generating a mobile-first creator funnel for a real product-based business.
-
-INPUTS:
-- Niche: ${niche}
-- Problem: ${problem}
-- Audience: ${audience}
-
-PRIVATE STRATEGY:
-Use a premium creator-commerce funnel structure.
-Match the funnel copy to the audience's emotional problem, desired outcome, and buying intent.
-Create copy that feels specific, polished, trustworthy, and conversion-focused.
-
-CREATOR PERSONALITY:
-Choose a realistic creator brand voice based on the niche:
-- hair: trendy, transformational, confidence-focused, beauty-influencer tone
-- barber: clean, masculine, sharp, grooming-focused
-- nails: stylish, glam, expressive, self-care focused
-- spa: calming, relaxing, wellness-focused, luxury self-care tone
-- lashes: glam, beauty-forward, confident, feminine
-- makeup: bold, artistic, trendy, creator-beauty tone
-- tattoo: edgy, expressive, artistic, alternative lifestyle tone
-- skincare: soft, trustworthy, polished, routine-focused
-- gift baskets: warm, thoughtful, celebratory, emotional gifting tone
-- perfume and cologne: elegant, luxury-driven, aspirational lifestyle tone
-
-EMOTIONAL ANGLE INTELLIGENCE:
-Choose the strongest emotional angle based on the niche, problem, and audience.
-Use the angle silently to shape the hook, hero, problem cards, routine, and CTA.
-
-Available emotional angles:
-- luxury: premium, elegant, elevated, aspirational
-- confidence: self-assured, beauty transformation, feeling seen
-- recovery: repair, reset, restoration, getting back on track
-- self-care: calming, personal care, daily ritual, gentle improvement
-- status: high-end, exclusive, standout, polished identity
-- simplicity: easy, clear, beginner-friendly, low-overwhelm
-- speed: quick-start, time-saving, fast routine, busy lifestyle
-- professional: expert, polished, service-provider approved, serious quality
-- romantic: soft, feminine, intimate, date-night, attraction-focused
-- wellness: balanced, calm, body-focused, lifestyle improvement
-
-CONVERSION RULES:
-- Lead with the pain point, not the product.
-- Make the offer feel simple and easy to start.
-- Use short mobile-friendly sentences.
-- Make the CTA feel natural, not pushy.
-- Avoid exaggerated promises.
-- Avoid medical claims.
-- Avoid income claims.
-- Avoid guaranteed results.
-- Do not mention AI.
-- Do not use markdown.
-- Return ONLY valid JSON.
-
-COPY STYLE:
-- Premium but simple.
-- Emotional but not dramatic.
-- Specific to the niche, problem, and audience.
-- Written like a real creator recommending a routine.
-- No placeholder words like "niche", "problem", "audience", "456", "789", "string", or "Product".
-
-RETURN ONLY THIS EXACT JSON STRUCTURE:
-{
-  "creator": {
-    "name": "realistic creator name",
-    "handle": "@realisticbrandhandle",
-    "tagline": "short creator brand tagline"
-  },
-  "hero": {
-    "headline": "short transformation-driven headline",
-    "subheadline": "short benefit-driven subheadline",
-    "ctaLabel": "short action CTA"
-  },
-  "problems": [
-    { "icon": "emoji", "title": "short problem title", "description": "short emotional description" },
-    { "icon": "emoji", "title": "short problem title", "description": "short emotional description" },
-    { "icon": "emoji", "title": "short problem title", "description": "short emotional description" },
-    { "icon": "emoji", "title": "short problem title", "description": "short emotional description" }
-  ],
-  "routineSteps": [
-    { "step": 1, "title": "short step title", "tip": "short practical tip" },
-    { "step": 2, "title": "short step title", "tip": "short practical tip" },
-    { "step": 3, "title": "short step title", "tip": "short practical tip" }
-  ],
-  "products": [],
-  "cta": {
-    "barTagline": "short trust-building line",
-    "finalHeadline": "short final CTA headline",
-    "finalSubtext": "short final support text",
-    "finalLabel": "short final CTA label"
-  }
-}`
-}
 const getNicheCategory = (niche = '') => {
   const nicheLower = niche.toLowerCase()
 
-  if (
-    nicheLower.includes('beard') ||
-    nicheLower.includes('barber')
-  ) {
+  if (nicheLower.includes('beard') || nicheLower.includes('barber')) {
     return 'beard'
   }
 
-  if (
-    nicheLower.includes('lash') ||
-    nicheLower.includes('lashes')
-  ) {
+  if (nicheLower.includes('lash') || nicheLower.includes('lashes')) {
     return 'lashes'
   }
 
@@ -242,6 +142,7 @@ const getTemplateIntelligence = ({ nicheCategory, productRoute }) => {
 
 const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
   const nicheCategory = getNicheCategory(niche)
+
   const productRoute = getProblemRoute({
     nicheCategory,
     problem,
@@ -253,15 +154,20 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
     productRoute,
   })
 
+  const fallbackProducts = getIntelligentProducts({
+    nicheCategory,
+    productRoute,
+  })
+
   return {
     ...currentData,
 
     template: templateData,
 
     creator: {
-      name: 'Maya Brooks',
-      handle: '@mayaglowup',
-      tagline: `Helping ${audience}`,
+      name: currentData?.creator?.name || 'Maya Brooks',
+      handle: currentData?.creator?.handle || '@mayaglowup',
+      tagline: currentData?.creator?.tagline || `Helping ${audience}`,
       image: currentData?.creator?.image || '/images/creator-profile.webp',
       videoSrc: currentData?.creator?.videoSrc || '',
     },
@@ -270,6 +176,7 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
       headline: `Fix ${problem} With This Simple ${niche} Routine`,
       subheadline: `Helpful ${niche} picks made for ${audience}.`,
       ctaLabel: 'Shop The Routine ✦',
+      creatorMicroScript: `Here is the simple ${niche} routine I recommend for ${problem}.`,
     },
 
     problems: [
@@ -313,16 +220,21 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
       },
     ],
 
-    products: getIntelligentProducts({
-      nicheCategory,
-      productRoute,
-    }).map((product, index) => ({
+    products: fallbackProducts.map((product, index) => ({
       id: `p${index + 1}`,
       image: product.image,
       name: product.name,
       benefit: product.benefit,
       cta: 'Shop Now',
       href: '#',
+      learnMore: {
+        title: `Learn more about ${product.name}`,
+        quickBenefit: product.benefit,
+        whyItWorks: 'Designed to support a simple, focused beauty routine.',
+        bestFor: audience,
+        howToUse: 'Use as directed in your daily routine.',
+        creatorInsight: 'I like this because it keeps the routine simple and easy to follow.',
+      },
     })),
 
     cta: {
@@ -330,6 +242,14 @@ const fallbackFunnel = ({ currentData, niche, problem, audience }) => {
       finalHeadline: `Ready to simplify your ${niche} routine?`,
       finalSubtext: `Start with a focused routine made for ${problem}.`,
       finalLabel: 'View Recommended Products',
+    },
+
+    reusableAssets: {
+      hooks: [],
+      ctaVariants: [],
+      socialCaptions: [],
+      creatorScripts: [],
+      emotionalAngles: [],
     },
   }
 }
@@ -387,8 +307,9 @@ const enforceHero = (hero, fallback) => ({
     fallback?.creatorMicroScript || ''
   ),
 })
+
 const enforceProblems = (problems, fallback) => {
-  return ensureArray(problems, fallback).map((item, index) => {
+  return ensureArray(problems, fallback).slice(0, 4).map((item, index) => {
     if (typeof item === 'string') {
       return {
         icon: fallback[index]?.icon || '✨',
@@ -409,7 +330,7 @@ const enforceProblems = (problems, fallback) => {
 }
 
 const enforceRoutineSteps = (steps, fallback) => {
-  return ensureArray(steps, fallback).slice(0, 3).map((item, index) => {
+  return ensureArray(steps, fallback).slice(0, 4).map((item, index) => {
     if (typeof item === 'string') {
       return {
         step: index + 1,
@@ -419,25 +340,63 @@ const enforceRoutineSteps = (steps, fallback) => {
     }
 
     return {
-      step: index + 1,
-      title: ensureString(item?.title, fallback[index]?.title || 'Step'),
-      tip: ensureString(item?.tip, fallback[index]?.tip || ''),
+      step: item?.step || index + 1,
+      title: ensureString(
+        item?.title || item?.stepTitle,
+        fallback[index]?.title || `Step ${index + 1}`
+      ),
+      tip: ensureString(
+        item?.tip || item?.description,
+        fallback[index]?.tip || ''
+      ),
     }
   })
 }
 
-const enforceProducts = (products, fallback) => {
-  return ensureArray(products, fallback).slice(0, 3).map((item, index) => ({
-    id: ensureString(item?.id, `p${index + 1}`),
-    image: ensureString(item?.image, `/images/product-${index + 1}.webp`),
-    name: ensureString(item?.name, fallback[index]?.name || `Product ${index + 1}`),
-    benefit: ensureString(
-      item?.benefit || item?.description,
-      fallback[index]?.benefit || ''
-    ),
-    cta: ensureString(item?.cta || item?.ctaLabel, 'Shop Now'),
-    href: ensureString(item?.href, '#'),
-  }))
+const enforceProducts = ({ aiProducts, controlledProducts, fallback }) => {
+  const productsToUse = controlledProducts.map((product, index) => {
+    const aiProduct = aiProducts?.[index] || {}
+
+    return {
+      id: `p${index + 1}`,
+
+      image: ensureString(
+        product?.image || aiProduct?.image,
+        `/images/product-${index + 1}.webp`
+      ),
+
+      name: ensureString(
+        product?.name || aiProduct?.name,
+        fallback[index]?.name || `Product ${index + 1}`
+      ),
+
+      benefit: ensureString(
+        product?.benefit ||
+          aiProduct?.benefit ||
+          aiProduct?.shortDescription ||
+          aiProduct?.description,
+        fallback[index]?.benefit || ''
+      ),
+
+      cta: ensureString(
+        aiProduct?.cta || aiProduct?.ctaLabel || product?.cta,
+        'Shop Now'
+      ),
+
+      href: ensureString(product?.href || aiProduct?.href, '#'),
+
+      learnMore: {
+        title: ensureString(aiProduct?.learnMore?.title, ''),
+        quickBenefit: ensureString(aiProduct?.learnMore?.quickBenefit, ''),
+        whyItWorks: ensureString(aiProduct?.learnMore?.whyItWorks, ''),
+        bestFor: ensureString(aiProduct?.learnMore?.bestFor, ''),
+        howToUse: ensureString(aiProduct?.learnMore?.howToUse, ''),
+        creatorInsight: ensureString(aiProduct?.learnMore?.creatorInsight, ''),
+      },
+    }
+  })
+
+  return ensureArray(productsToUse, fallback).slice(0, 3)
 }
 
 const enforceCTA = (cta, fallback) => ({
@@ -445,6 +404,20 @@ const enforceCTA = (cta, fallback) => ({
   finalHeadline: ensureString(cta?.finalHeadline, fallback.finalHeadline),
   finalSubtext: ensureString(cta?.finalSubtext, fallback.finalSubtext),
   finalLabel: ensureString(cta?.finalLabel, fallback.finalLabel),
+})
+
+const enforceReusableAssets = (assets = {}) => ({
+  hooks: Array.isArray(assets?.hooks) ? assets.hooks : [],
+  ctaVariants: Array.isArray(assets?.ctaVariants) ? assets.ctaVariants : [],
+  socialCaptions: Array.isArray(assets?.socialCaptions)
+    ? assets.socialCaptions
+    : [],
+  creatorScripts: Array.isArray(assets?.creatorScripts)
+    ? assets.creatorScripts
+    : [],
+  emotionalAngles: Array.isArray(assets?.emotionalAngles)
+    ? assets.emotionalAngles
+    : [],
 })
 
 const normalizeAiFunnel = ({
@@ -474,28 +447,40 @@ const normalizeAiFunnel = ({
 
   return {
     template: templateData,
+
     creator: enforceCreator(aiData?.creator, fallback.creator),
+
     hero: enforceHero(aiData?.hero, fallback.hero),
+
     problems: enforceProblems(
-  aiData?.problemCards || aiData?.problems,
-  fallback.problems
-),
+      aiData?.problemCards || aiData?.problems,
+      fallback.problems
+    ),
+
     routineSteps: enforceRoutineSteps(
-  aiData?.routine?.steps || aiData?.routineSteps,
-  fallback.routineSteps
-),
-    products: enforceProducts(controlledProducts, fallback.products),
-  cta: enforceCTA(
-  aiData?.finalCta
-    ? {
-        barTagline: fallback.cta.barTagline,
-        finalHeadline: aiData.finalCta.headline,
-        finalSubtext: aiData.finalCta.subtext,
-        finalLabel: aiData.finalCta.ctaLabel,
-      }
-    : aiData?.cta,
-  fallback.cta
-),
+      aiData?.routine?.steps || aiData?.routineSteps,
+      fallback.routineSteps
+    ),
+
+    products: enforceProducts({
+      aiProducts: aiData?.products || [],
+      controlledProducts,
+      fallback: fallback.products,
+    }),
+
+    cta: enforceCTA(
+      aiData?.finalCta
+        ? {
+            barTagline: fallback.cta.barTagline,
+            finalHeadline: aiData.finalCta.headline,
+            finalSubtext: aiData.finalCta.subtext,
+            finalLabel: aiData.finalCta.ctaLabel,
+          }
+        : aiData?.cta,
+      fallback.cta
+    ),
+
+    reusableAssets: enforceReusableAssets(aiData?.reusableAssets),
   }
 }
 
@@ -527,6 +512,7 @@ export default async function handler(req, res) {
     const audience = generationInputs?.audience || 'busy beauty shoppers'
 
     const nicheCategory = getNicheCategory(niche)
+
     const productRoute = getProblemRoute({
       nicheCategory,
       problem,
@@ -548,18 +534,17 @@ export default async function handler(req, res) {
     console.log('CONTROLLED PRODUCTS:', intelligentProducts)
     console.log('TEMPLATE INTELLIGENCE:', templateData)
 
-const privatePrompt = buildFunnelPrompt({
-  creatorName: currentData?.creator?.name || 'Creator',
-  creatorType: niche,
-  niche,
-  productName: intelligentProducts?.[0]?.name || 'Featured Product',
-  productDescription:
-    intelligentProducts?.[0]?.benefit || problem,
-  targetAudience: audience,
-  offerType: niche,
-  tone: templateData?.visualTone || 'premium',
-  callToAction: 'Shop The Routine ✦',
-})
+    const privatePrompt = buildFunnelPrompt({
+      creatorName: currentData?.creator?.name || 'Creator',
+      creatorType: niche,
+      niche,
+      productName: intelligentProducts?.[0]?.name || 'Featured Product',
+      productDescription: intelligentProducts?.[0]?.benefit || problem,
+      targetAudience: audience,
+      offerType: niche,
+      tone: templateData?.visualTone || 'premium',
+      callToAction: 'Shop The Routine ✦',
+    })
 
     const aiResponse = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
