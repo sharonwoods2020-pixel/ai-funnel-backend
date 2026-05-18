@@ -3,491 +3,171 @@ import { TEMPLATE_INTELLIGENCE } from '../data/templateIntelligence.js'
 import { buildFunnelPrompt } from '../aiFunnelPrompt.js'
 
 const getNicheCategory = (niche = '') => {
-  const nicheLower = niche.toLowerCase().trim()
+  const n = niche.toLowerCase().trim()
 
-  if (
-    nicheLower.includes('braid') ||
-    nicheLower.includes('braids') ||
-    nicheLower.includes('knotless') ||
-    nicheLower.includes('protective style')
-  ) {
-    return 'braids'
-  }
-
-  if (
-    nicheLower.includes('hair') ||
-    nicheLower.includes('wig') ||
-    nicheLower.includes('extension') ||
-    nicheLower.includes('lace')
-  ) {
-    return 'hair'
-  }
-
-  if (
-    nicheLower.includes('barber') ||
-    nicheLower.includes('beard') ||
-    nicheLower.includes('fade') ||
-    nicheLower.includes('clipper')
-  ) {
-    return 'barber'
-  }
-
-  if (
-    nicheLower.includes('nail') ||
-    nicheLower.includes('acrylic') ||
-    nicheLower.includes('gel nails') ||
-    nicheLower.includes('press on')
-  ) {
-    return 'nails'
-  }
-
-  if (
-    nicheLower.includes('lash') ||
-    nicheLower.includes('lashes') ||
-    nicheLower.includes('brows') ||
-    nicheLower.includes('brow')
-  ) {
-    return 'lashes'
-  }
-
-  if (
-    nicheLower.includes('fragrance') ||
-    nicheLower.includes('perfume') ||
-    nicheLower.includes('cologne')
-  ) {
-    return 'fragrance'
-  }
-
-  if (
-    nicheLower.includes('skin') ||
-    nicheLower.includes('skincare') ||
-    nicheLower.includes('facial') ||
-    nicheLower.includes('acne')
-  ) {
-    return 'skincare'
-  }
-
-  if (
-    nicheLower.includes('gift') ||
-    nicheLower.includes('basket') ||
-    nicheLower.includes('bundle')
-  ) {
-    return 'giftbaskets'
-  }
+  if (n.includes('braid') || n.includes('knotless')) return 'braids'
+  if (n.includes('hair') || n.includes('wig') || n.includes('extension')) return 'hair'
+  if (n.includes('barber') || n.includes('beard') || n.includes('fade')) return 'barber'
+  if (n.includes('nail') || n.includes('acrylic') || n.includes('gel')) return 'nails'
+  if (n.includes('lash') || n.includes('brow')) return 'lashes'
+  if (n.includes('fragrance') || n.includes('perfume') || n.includes('cologne')) return 'fragrance'
+  if (n.includes('skin') || n.includes('skincare') || n.includes('facial')) return 'skincare'
+  if (n.includes('gift') || n.includes('basket') || n.includes('bundle')) return 'giftbaskets'
 
   return 'beauty'
 }
 
-const getProblemRoute = ({
-  nicheCategory,
-  problem = '',
-  niche = '',
-}) => {
-  const problemLower = problem.toLowerCase()
-  const nicheLower = niche.toLowerCase()
-  const combined = `${nicheLower} ${problemLower}`
-
-  if (nicheCategory === 'braids') {
-    if (
-      combined.includes('knotless') ||
-      combined.includes('box braid')
-    ) {
-      return 'knotless'
-    }
-
-    if (
-      combined.includes('cornrow') ||
-      combined.includes('feed in')
-    ) {
-      return 'cornrows'
-    }
-
-    return 'protective'
-  }
-
-  if (nicheCategory === 'hair') {
-    if (
-      combined.includes('wig') ||
-      combined.includes('lace')
-    ) {
-      return 'wigs'
-    }
-
-    return 'extensions'
-  }
-
-  if (nicheCategory === 'barber') {
-    return 'luxury'
-  }
-
-  if (nicheCategory === 'nails') {
-    return 'glam'
-  }
-
-  if (nicheCategory === 'lashes') {
-    return 'glam'
-  }
-
-  if (nicheCategory === 'fragrance') {
-    return 'luxury'
-  }
-
-  if (nicheCategory === 'giftbaskets') {
-    return 'luxury'
-  }
-
-  if (nicheCategory === 'skincare') {
-    return 'luxury'
-  }
-
-  return 'general'
-}
-
-const getTemplateIntelligence = ({
-  nicheCategory,
-  productRoute,
-}) => {
-  const matchedTemplate =
-    TEMPLATE_INTELLIGENCE?.[nicheCategory]?.[
-      productRoute
-    ] ||
-    TEMPLATE_INTELLIGENCE?.[nicheCategory]
-      ?.luxury ||
-    TEMPLATE_INTELLIGENCE?.[nicheCategory]
-      ?.glam
-
-  if (matchedTemplate) {
-    return matchedTemplate
-  }
-
-  return {
-    templateId: `${nicheCategory}-creator-funnel`,
-    visualTone: `${nicheCategory} focused creator funnel`,
-    layoutStyle: 'mobile-first creator funnel',
-    colorMood: 'black, white, neutral',
-  }
-}
-
-const getNicheEnforcement = ({
-  nicheCategory,
-}) => {
+const getNicheRules = (nicheCategory) => {
   const rules = {
     braids: {
-      blockedVocabulary:
-        'serum, skincare, hydration serum, acne, moisturizer, facial',
-      ctaStyle:
-        'Book The Braid Look ✦',
-      creatorVoice:
-        'protective style specialist',
+      allowed:
+        'braids, knotless braids, box braids, cornrows, braid install, protective styles, scalp comfort, edge care, braid maintenance, braid longevity, neat parts',
+      blocked:
+        'serum, skincare, skin glow, hydration, facial, cleanser, moisturizer, acne, dark spots',
+      cta: 'Book The Braid Look ✦',
+      voice: 'protective style specialist and braid expert',
     },
-
     hair: {
-      blockedVocabulary:
-        'facial cleanser, acne treatment',
-      ctaStyle:
-        'Shop The Hair Look ✦',
-      creatorVoice:
-        'hair stylist expert',
+      allowed:
+        'hair install, wigs, extensions, bundles, lace install, silk press, shine, style maintenance, transformation',
+      blocked:
+        'facial, acne, skin serum, skincare cleanser',
+      cta: 'Shop The Hair Look ✦',
+      voice: 'hair stylist and transformation expert',
     },
-
     barber: {
-      blockedVocabulary:
-        'lashes, skincare serum',
-      ctaStyle:
-        'Get The Fresh Look ✦',
-      creatorVoice:
-        'barber grooming expert',
+      allowed:
+        'barber, beard, fade, lineup, grooming, fresh cut, clippers, sharp edges',
+      blocked:
+        'lashes, skincare serum, braid install, nail set',
+      cta: 'Get The Fresh Look ✦',
+      voice: 'barber grooming expert',
     },
-
     nails: {
-      blockedVocabulary:
-        'beard growth, braid install',
-      ctaStyle:
-        'Shop The Nail Look ✦',
-      creatorVoice:
-        'nail artist',
+      allowed:
+        'nails, acrylics, gel set, press-ons, manicure, nail art, polish, shape, fresh set',
+      blocked:
+        'beard growth, braid install, skincare serum',
+      cta: 'Shop The Nail Look ✦',
+      voice: 'nail artist',
     },
-
     lashes: {
-      blockedVocabulary:
-        'barber fade, braid install',
-      ctaStyle:
-        'Shop The Lash Look ✦',
-      creatorVoice:
-        'lash specialist',
+      allowed:
+        'lashes, lash extensions, lash fill, brows, retention, glam eyes, lash care',
+      blocked:
+        'braids, beard, facial cleanser',
+      cta: 'Shop The Lash Look ✦',
+      voice: 'lash specialist',
     },
-
     fragrance: {
-      blockedVocabulary:
-        'braid maintenance, nail polish',
-      ctaStyle:
-        'Find Your Scent ✦',
-      creatorVoice:
-        'luxury fragrance curator',
+      allowed:
+        'perfume, cologne, fragrance, scent, signature scent, luxury, fresh, warm, romantic',
+      blocked:
+        'braids, nails, beard, acne, cleanser',
+      cta: 'Find Your Scent ✦',
+      voice: 'luxury fragrance curator',
     },
-
+    giftbaskets: {
+      allowed:
+        'gift basket, curated gift, beauty bundle, occasion, birthday, holiday, thoughtful gifting',
+      blocked:
+        'acne, beard growth, lash retention, braid install',
+      cta: 'Build The Gift ✦',
+      voice: 'gift curator',
+    },
     skincare: {
-      blockedVocabulary:
-        'cornrows, clippers, fades',
-      ctaStyle:
-        'Shop The Routine ✦',
-      creatorVoice:
-        'skincare creator',
+      allowed:
+        'skincare, skin, hydration, glow, cleanser, serum, moisturizer, texture, facial routine',
+      blocked:
+        'braid install, clippers, nail set, lash fill',
+      cta: 'Shop The Routine ✦',
+      voice: 'skincare creator',
     },
-
     beauty: {
-      blockedVocabulary: '',
-      ctaStyle:
-        'Shop The Routine ✦',
-      creatorVoice:
-        'beauty creator',
+      allowed:
+        'beauty routine, creator recommendation, confidence, polished look',
+      blocked: '',
+      cta: 'Shop The Routine ✦',
+      voice: 'beauty creator',
     },
   }
 
   return rules[nicheCategory] || rules.beauty
 }
 
-const getFallbackProducts = (
-  nicheCategory,
-) => {
-  const products = {
-    braids: [
-      {
-        name: 'Braid Prep Consultation',
-        benefit:
-          'Plan braid styles and maintenance',
-        image: '/images/product-1.webp',
-      },
-      {
-        name: 'Protective Style Care',
-        benefit:
-          'Support braid longevity and neatness',
-        image: '/images/product-2.webp',
-      },
-    ],
-
-    hair: [
-      {
-        name: 'Luxury Hair Install',
-        benefit:
-          'Polished install and styling support',
-        image: '/images/product-1.webp',
-      },
-    ],
-
-    barber: [
-      {
-        name: 'Fresh Cut Grooming',
-        benefit:
-          'Sharp look and beard maintenance',
-        image: '/images/product-1.webp',
-      },
-    ],
-
-    nails: [
-      {
-        name: 'Nail Glam Set',
-        benefit:
-          'Fresh polished nail appearance',
-        image: '/images/product-1.webp',
-      },
-    ],
-
-    lashes: [
-      {
-        name: 'Lash Glam Routine',
-        benefit:
-          'Full glam lash maintenance',
-        image: '/images/product-1.webp',
-      },
-    ],
-
-    fragrance: [
-      {
-        name: 'Luxury Signature Scent',
-        benefit:
-          'Elegant daily fragrance experience',
-        image: '/images/product-1.webp',
-      },
-    ],
-
-    skincare: [
-      {
-        name: 'HydraGlow Renewal Serum',
-        benefit:
-          'Deep hydration and glow support',
-        image: '/images/product-1.webp',
-      },
-    ],
-
-    beauty: [
-      {
-        name: 'Beauty Creator Routine',
-        benefit:
-          'Simple creator beauty routine',
-        image: '/images/product-1.webp',
-      },
-    ],
-  }
-
-  return (
-    products[nicheCategory] ||
-    products.beauty
-  )
-}
-
-const getIntelligentProducts = ({
-  nicheCategory,
-}) => {
-  const matchedProducts =
-    PRODUCT_INTELLIGENCE?.[
-      nicheCategory
-    ]?.luxury || []
-
-  const containsSkincareLanguage =
-    matchedProducts?.some((product) => {
-      const text = `${product?.name || ''} ${
-        product?.benefit || ''
-      }`.toLowerCase()
-
-      return (
-        text.includes('serum') ||
-        text.includes('skin') ||
-        text.includes('hydration')
-      )
-    })
-
-  if (
-    nicheCategory !== 'skincare' &&
-    containsSkincareLanguage
-  ) {
-    return getFallbackProducts(
-      nicheCategory,
-    )
-  }
-
-  if (!matchedProducts.length) {
-    return getFallbackProducts(
-      nicheCategory,
-    )
-  }
-
-  return matchedProducts
-}
-
-const fallbackFunnel = ({
-  currentData,
-  niche,
-  problem,
-  audience,
-}) => {
-  const nicheCategory =
-    getNicheCategory(niche)
-
-  const nicheRules =
-    getNicheEnforcement({
-      nicheCategory,
-    })
-
-  const products =
-    getFallbackProducts(
-      nicheCategory,
-    )
+const fallbackFunnel = ({ currentData = {}, niche, problem, audience }) => {
+  const nicheCategory = getNicheCategory(niche)
+  const rules = getNicheRules(nicheCategory)
 
   return {
     ...currentData,
-
     template: {
       templateId: `${nicheCategory}-creator-funnel`,
+      visualTone: `${nicheCategory} focused creator funnel`,
+      layoutStyle: 'mobile-first creator funnel',
+      colorMood: 'black, white, neutral',
     },
-
     creator: {
-      name:
-        currentData?.creator?.name ||
-        'Maya Brooks',
-
-      handle:
-        currentData?.creator?.handle ||
-        '@creator',
-
-      tagline:
-        currentData?.creator?.tagline ||
-        `Helping ${audience}`,
-
-      image:
-        currentData?.creator?.image ||
-        '/images/creator-profile.webp',
-
-      videoSrc:
-        currentData?.creator?.videoSrc ||
-        '',
+      name: currentData?.creator?.name || 'Creator',
+      handle: currentData?.creator?.handle || '@creator',
+      tagline: currentData?.creator?.tagline || `Helping ${audience}`,
+      image: currentData?.creator?.image || '/images/creator-profile.webp',
+      videoSrc: currentData?.creator?.videoSrc || '',
     },
-
     hero: {
-      headline:
-        `Premium ${niche} Experience`,
-
-      subheadline:
-        `A focused ${niche} solution for ${audience}.`,
-
-      ctaLabel:
-        nicheRules.ctaStyle,
-
-      creatorMicroScript:
-        `Here is my recommended ${niche} routine.`,
+      headline: `Premium ${niche} Experience`,
+      subheadline: `A focused ${niche} solution for ${audience}.`,
+      ctaLabel: rules.cta,
+      creatorMicroScript: `Here is my recommended ${niche} approach for ${problem}.`,
     },
-
     problems: [
       {
         icon: '✨',
         title: problem,
-        description:
-          `A common ${niche} concern.`,
+        description: `A common ${niche} concern for ${audience}.`,
       },
     ],
-
     routineSteps: [
       {
         step: 1,
         title: 'Choose Your Look',
-        tip:
-          `Start with the right ${niche} goal.`,
+        tip: `Start with the right ${niche} goal.`,
       },
-
       {
         step: 2,
-        title: 'Follow The Routine',
-        tip:
-          `Use a consistent ${niche} plan.`,
+        title: 'Follow The Plan',
+        tip: `Use a focused ${niche} routine that fits your needs.`,
+      },
+      {
+        step: 3,
+        title: 'Keep It Fresh',
+        tip: `Maintain the ${niche} result with simple follow-up care.`,
       },
     ],
-
-    products: products.map(
-      (product, index) => ({
-        id: `p${index + 1}`,
-        image: product.image,
-        name: product.name,
-        benefit: product.benefit,
-        cta:
-          nicheRules.ctaStyle,
+    products: [
+      {
+        id: 'p1',
+        image: '/images/product-1.webp',
+        name: `${niche} Starter Offer`,
+        benefit: `A focused ${niche} option for ${problem}`,
+        cta: rules.cta,
         href: '#',
-      }),
-    ),
-
+        learnMore: {
+          title: `Learn more about this ${niche} offer`,
+          quickBenefit: `Helps support a better ${niche} result.`,
+          whyItWorks: `Built around the selected ${niche} category and audience need.`,
+          bestFor: audience,
+          howToUse: `Use this as part of your ${niche} routine.`,
+          creatorInsight: `This keeps the ${niche} offer simple and focused.`,
+        },
+      },
+    ],
     cta: {
-      barTagline:
-        `Simple ${niche} routine`,
-
-      finalHeadline:
-        `Ready for your ${niche} transformation?`,
-
-      finalSubtext:
-        `Start your new ${niche} journey today.`,
-
-      finalLabel:
-        nicheRules.ctaStyle,
+      barTagline: `Simple ${niche} routine`,
+      finalHeadline: `Ready for your ${niche} transformation?`,
+      finalSubtext: `Start with a focused plan for ${problem}.`,
+      finalLabel: rules.cta,
     },
-
     reusableAssets: {
       hooks: [],
       ctaVariants: [],
@@ -498,114 +178,268 @@ const fallbackFunnel = ({
   }
 }
 
-export default async function handler(
-  req,
-  res,
-) {
+const cleanJsonText = (text = '') =>
+  text.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim()
+
+const safeParseJson = (text = '') => {
   try {
-    const {
-      currentData = {},
-      generationInputs = {},
-    } = req.body || {}
+    return JSON.parse(cleanJsonText(text))
+  } catch {
+    return null
+  }
+}
 
-    const {
-      niche = 'Beauty',
-      problem = 'beauty challenge',
-      audience = 'beauty creators',
-    } = generationInputs
+const containsBlockedWords = (data, blocked = '') => {
+  if (!blocked) return false
 
-    const nicheCategory =
-      getNicheCategory(niche)
+  const blockedList = blocked
+    .split(',')
+    .map((word) => word.trim().toLowerCase())
+    .filter(Boolean)
 
-    const productRoute =
-      getProblemRoute({
-        nicheCategory,
-        problem,
-        niche,
-      })
+  const allText = JSON.stringify(data).toLowerCase()
 
-    const intelligentProducts =
-      getIntelligentProducts({
-        nicheCategory,
-        productRoute,
-      })
+  return blockedList.some((word) => allText.includes(word))
+}
+
+const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rules, templateData }) => {
+  const fallback = fallbackFunnel({
+    currentData,
+    niche,
+    problem,
+    audience,
+  })
+
+  return {
+    ...fallback,
+
+    template: {
+      ...fallback.template,
+      ...templateData,
+      ...(aiData?.template || {}),
+    },
+
+    creator: {
+      ...fallback.creator,
+      ...(aiData?.creator || {}),
+      image: currentData?.creator?.image || fallback.creator.image,
+      videoSrc: currentData?.creator?.videoSrc || fallback.creator.videoSrc,
+    },
+
+    hero: {
+      ...fallback.hero,
+      ...(aiData?.hero || {}),
+      ctaLabel: aiData?.hero?.ctaLabel || rules.cta,
+    },
+
+    problems: Array.isArray(aiData?.problemCards)
+      ? aiData.problemCards
+      : Array.isArray(aiData?.problems)
+        ? aiData.problems
+        : fallback.problems,
+
+    routineSteps: Array.isArray(aiData?.routine?.steps)
+      ? aiData.routine.steps.map((step, index) => ({
+          step: index + 1,
+          title: step?.title || step?.stepTitle || `Step ${index + 1}`,
+          tip: step?.tip || step?.description || '',
+        }))
+      : Array.isArray(aiData?.routineSteps)
+        ? aiData.routineSteps
+        : fallback.routineSteps,
+
+    products: Array.isArray(aiData?.products) && aiData.products.length
+      ? aiData.products.slice(0, 3).map((product, index) => ({
+          id: product?.id || `p${index + 1}`,
+          image: product?.image || `/images/product-${index + 1}.webp`,
+          name: product?.name || `${niche} Offer ${index + 1}`,
+          benefit:
+            product?.benefit ||
+            product?.shortDescription ||
+            product?.description ||
+            `A focused ${niche} option.`,
+          cta: product?.cta || product?.ctaLabel || rules.cta,
+          href: product?.href || '#',
+          learnMore: product?.learnMore || {
+            title: `Learn more about ${product?.name || `${niche} Offer`}`,
+            quickBenefit: product?.benefit || '',
+            whyItWorks: `Created for ${niche} needs.`,
+            bestFor: audience,
+            howToUse: `Use as part of your ${niche} routine.`,
+            creatorInsight: `This supports the selected ${niche} goal.`,
+          },
+        }))
+      : fallback.products,
+
+    cta: aiData?.finalCta
+      ? {
+          barTagline: fallback.cta.barTagline,
+          finalHeadline: aiData.finalCta.headline || fallback.cta.finalHeadline,
+          finalSubtext: aiData.finalCta.subtext || fallback.cta.finalSubtext,
+          finalLabel: aiData.finalCta.ctaLabel || rules.cta,
+        }
+      : fallback.cta,
+
+    reusableAssets: {
+      hooks: Array.isArray(aiData?.reusableAssets?.hooks)
+        ? aiData.reusableAssets.hooks
+        : [],
+      ctaVariants: Array.isArray(aiData?.reusableAssets?.ctaVariants)
+        ? aiData.reusableAssets.ctaVariants
+        : [],
+      socialCaptions: Array.isArray(aiData?.reusableAssets?.socialCaptions)
+        ? aiData.reusableAssets.socialCaptions
+        : [],
+      creatorScripts: Array.isArray(aiData?.reusableAssets?.creatorScripts)
+        ? aiData.reusableAssets.creatorScripts
+        : [],
+      emotionalAngles: Array.isArray(aiData?.reusableAssets?.emotionalAngles)
+        ? aiData.reusableAssets.emotionalAngles
+        : [],
+    },
+  }
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({
+      error: 'Method not allowed',
+    })
+  }
+
+  try {
+    const { currentData = {}, generationInputs = {} } = req.body || {}
+
+    const niche = generationInputs?.niche || 'Beauty'
+    const problem = generationInputs?.problem || 'beauty challenge'
+    const audience = generationInputs?.audience || 'beauty shoppers'
+
+    const nicheCategory = getNicheCategory(niche)
+    const rules = getNicheRules(nicheCategory)
 
     const templateData =
-      getTemplateIntelligence({
-        nicheCategory,
-        productRoute,
-      })
+      TEMPLATE_INTELLIGENCE?.[nicheCategory]?.luxury ||
+      TEMPLATE_INTELLIGENCE?.[nicheCategory]?.glam ||
+      {
+        templateId: `${nicheCategory}-creator-funnel`,
+        visualTone: `${nicheCategory} focused creator funnel`,
+        layoutStyle: 'mobile-first creator funnel',
+        colorMood: 'black, white, neutral',
+      }
 
-    const nicheRules =
-      getNicheEnforcement({
-        nicheCategory,
-      })
+    const privatePrompt = buildFunnelPrompt({
+      creatorName: currentData?.creator?.name || 'Creator',
+      creatorType: rules.voice,
+      niche,
+      productName: `${niche} Offer`,
+      productDescription: problem,
+      targetAudience: audience,
+      offerType: niche,
+      tone: templateData?.visualTone || rules.voice,
+      callToAction: rules.cta,
+      allowedVocabulary: rules.allowed,
+      blockedVocabulary: rules.blocked,
+      emotionalAngle: rules.allowed,
+    })
 
-    const privatePrompt =
-      buildFunnelPrompt({
-        creatorName:
-          currentData?.creator?.name ||
-          'Creator',
+    const enforcedPrompt = `
+${privatePrompt}
 
-        creatorType:
-          nicheRules.creatorVoice,
+STRICT NICHE CONTROL:
+The selected niche is "${niche}".
+You must ONLY generate content related to: ${rules.allowed}.
+You must NOT use or imply these words/topics: ${rules.blocked}.
 
-        niche,
+PRODUCT/SERVICE CARD RULE:
+Generate product/service cards dynamically for the selected niche.
+Do NOT use generic skincare products unless the selected niche is skincare.
+For Braids, product/service cards must be braid services, braid prep, braid maintenance, protective style care, scalp comfort, edge care, or braid longevity.
 
-        productName:
-          intelligentProducts?.[0]
-            ?.name ||
-          `${niche} Offer`,
+Return ONLY valid JSON.
+`
 
-        productDescription:
-          intelligentProducts?.[0]
-            ?.benefit ||
-          problem,
+    const aiResponse = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4.1-mini',
+        temperature: 0.5,
+        input: [
+          {
+            role: 'system',
+            content:
+              'You are a private AI funnel engine. Return only valid JSON. Never return markdown or explanations.',
+          },
+          {
+            role: 'user',
+            content: enforcedPrompt,
+          },
+        ],
+      }),
+    })
 
-        targetAudience:
-          audience,
-
-        offerType:
+    if (!aiResponse.ok) {
+      return res.status(200).json(
+        fallbackFunnel({
+          currentData,
           niche,
+          problem,
+          audience,
+        }),
+      )
+    }
 
-        tone:
-          templateData?.visualTone ||
-          nicheRules.creatorVoice,
+    const aiResult = await aiResponse.json()
+    const rawText =
+      aiResult?.output?.[0]?.content?.[0]?.text ||
+      aiResult?.output_text ||
+      ''
 
-        callToAction:
-          nicheRules.ctaStyle,
+    const parsedJson = safeParseJson(rawText)
 
-        blockedVocabulary:
-          nicheRules.blockedVocabulary,
-      })
+    if (!parsedJson || containsBlockedWords(parsedJson, rules.blocked)) {
+      return res.status(200).json(
+        fallbackFunnel({
+          currentData,
+          niche,
+          problem,
+          audience,
+        }),
+      )
+    }
 
-    console.log(
-      'PRIVATE PROMPT:',
-      privatePrompt,
-    )
+    const generatedFunnel = normalizeAiFunnel({
+      aiData: parsedJson,
+      currentData,
+      niche,
+      problem,
+      audience,
+      rules,
+      templateData,
+    })
 
-    const generatedFunnel =
+    return res.status(200).json(generatedFunnel)
+  } catch (error) {
+    const { currentData = {}, generationInputs = {} } = req.body || {}
+
+    return res.status(200).json(
       fallbackFunnel({
         currentData,
-        niche,
-        problem,
-        audience,
-      })
-
-    return res.status(200).json({
-      success: true,
-      promptUsed:
-        privatePrompt,
-      funnel:
-        generatedFunnel,
-    })
-  } catch (error) {
-    console.error(error)
-
-    return res.status(500).json({
-      success: false,
-      error:
-        'Failed to generate funnel',
-    })
+        niche: generationInputs?.niche || 'Beauty',
+        problem: generationInputs?.problem || 'beauty challenge',
+        audience: generationInputs?.audience || 'beauty shoppers',
+      }),
+    )
   }
 }
