@@ -22,11 +22,44 @@ export default async function handler(req, res) {
       })
     }
 
+    const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-image-1',
+        prompt,
+        size: '1024x1536',
+        quality: 'medium',
+      }),
+    })
+
+    if (!imageResponse.ok) {
+      const errorText = await imageResponse.text()
+
+      return res.status(500).json({
+        success: false,
+        error: 'OpenAI image generation failed',
+        details: errorText,
+      })
+    }
+
+    const imageData = await imageResponse.json()
+    const base64Image = imageData?.data?.[0]?.b64_json || ''
+
+    if (!base64Image) {
+      return res.status(500).json({
+        success: false,
+        error: 'No image returned from OpenAI',
+      })
+    }
+
     return res.status(200).json({
       success: true,
-      imageUrl: '',
+      imageUrl: `data:image/png;base64,${base64Image}`,
       prompt,
-      message: 'Image endpoint connected. Image provider will be added next.',
     })
   } catch (error) {
     return res.status(500).json({
