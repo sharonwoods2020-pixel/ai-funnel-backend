@@ -59,13 +59,57 @@ VISUAL TONE:
 ${visualTone}
 
 IMAGE REQUIREMENTS:
-- premium advertising photography
-- vertical mobile composition
+${
+  niche.toLowerCase().includes('barber')
+    ? `
+- premium barber shop aesthetic
+- masculine grooming campaign
+- sharp fade haircut
+- barber tools visible
+- editorial barber photography
+- confident masculine energy
+`
+    : niche.toLowerCase().includes('nail')
+      ? `
+- luxury nail studio aesthetic
+- manicure focused composition
+- gel nails and nail artistry
+- polished feminine nail campaign
+- hands-focused beauty photography
+`
+      : niche.toLowerCase().includes('tattoo')
+        ? `
+- modern tattoo studio aesthetic
+- tattoo culture photography
+- artistic edgy composition
+- visible tattoo artwork
+- editorial tattoo campaign lighting
+`
+        : niche.toLowerCase().includes('spa')
+          ? `
+- calming spa atmosphere
+- wellness aesthetic
+- massage or facial environment
+- relaxation-focused photography
+- luxury spa branding
+`
+          : niche.toLowerCase().includes('lash')
+            ? `
+- glam lash studio aesthetic
+- close-up lash beauty photography
+- premium lash extension campaign
+- soft glam makeup look
+`
+            : `
+- premium beauty advertising photography
 - luxury beauty campaign aesthetic
 - emotionally engaging
-- soft cinematic lighting
-- realistic skin texture
-- modern creator-style branding
+- cinematic lighting
+- modern creator branding
+`
+}
+
+- vertical mobile composition
 - high-end commercial quality
 - social media funnel aesthetic
 - space for headline text overlay
