@@ -1,4 +1,5 @@
 import { PRODUCT_INTELLIGENCE } from '../data/productIntelligence.js'
+import { CAREER_INTELLIGENCE } from '../data/careerIntelligence.js'
 import { TEMPLATE_INTELLIGENCE } from '../data/templateIntelligence.js'
 import { buildFunnelPrompt } from '../aiFunnelPrompt.js'
 
@@ -18,81 +19,18 @@ const getNicheCategory = (niche = '') => {
 }
 
 const getNicheRules = (nicheCategory) => {
-  const rules = {
-    braids: {
-      allowed:
-        'braids, knotless braids, box braids, cornrows, braid install, protective styles, scalp comfort, edge care, braid maintenance, braid longevity, neat parts',
-      blocked:
-        'serum, skincare, skin glow, hydration, facial, cleanser, moisturizer, acne, dark spots',
-      cta: 'Book The Braid Look ✦',
-      voice: 'protective style specialist and braid expert',
-    },
-    hair: {
-      allowed:
-        'hair install, wigs, extensions, bundles, lace install, silk press, shine, style maintenance, transformation',
-      blocked:
-        'facial, acne, skin serum, skincare cleanser',
-      cta: 'Shop The Hair Look ✦',
-      voice: 'hair stylist and transformation expert',
-    },
-    barber: {
-      allowed:
-        'barber, beard, fade, lineup, grooming, fresh cut, clippers, sharp edges',
-      blocked:
-        'lashes, skincare serum, braid install, nail set',
-      cta: 'Get The Fresh Look ✦',
-      voice: 'barber grooming expert',
-    },
-    nails: {
-      allowed:
-        'nails, acrylics, gel set, press-ons, manicure, nail art, polish, shape, fresh set',
-      blocked:
-        'beard growth, braid install, skincare serum',
-      cta: 'Shop The Nail Look ✦',
-      voice: 'nail artist',
-    },
-    lashes: {
-      allowed:
-        'lashes, lash extensions, lash fill, brows, retention, glam eyes, lash care',
-      blocked:
-        'braids, beard, facial cleanser',
-      cta: 'Shop The Lash Look ✦',
-      voice: 'lash specialist',
-    },
-    fragrance: {
-      allowed:
-        'perfume, cologne, fragrance, scent, signature scent, luxury, fresh, warm, romantic',
-      blocked:
-        'braids, nails, beard, acne, cleanser',
-      cta: 'Find Your Scent ✦',
-      voice: 'luxury fragrance curator',
-    },
-    giftbaskets: {
-      allowed:
-        'gift basket, curated gift, beauty bundle, occasion, birthday, holiday, thoughtful gifting',
-      blocked:
-        'acne, beard growth, lash retention, braid install',
-      cta: 'Build The Gift ✦',
-      voice: 'gift curator',
-    },
-    skincare: {
-      allowed:
-        'skincare, skin, hydration, glow, cleanser, serum, moisturizer, texture, facial routine',
-      blocked:
-        'braid install, clippers, nail set, lash fill',
-      cta: 'Shop The Routine ✦',
-      voice: 'skincare creator',
-    },
-    beauty: {
-      allowed:
-        'beauty routine, creator recommendation, confidence, polished look',
-      blocked: '',
-      cta: 'Shop The Routine ✦',
-      voice: 'beauty creator',
-    },
-  }
-
-  return rules[nicheCategory] || rules.beauty
+  return (
+    CAREER_INTELLIGENCE?.[nicheCategory] ||
+    CAREER_INTELLIGENCE?.beauty || {
+      allowedVocabulary: '',
+      blockedVocabulary: '',
+      creatorVoice: 'beauty creator',
+      emotionalAngles: '',
+      ctaStyle: 'Shop The Routine ✦',
+      offerTypes: '',
+      visualTone: 'clean beauty',
+    }
+  )
 }
 
 const fallbackFunnel = ({ currentData = {}, niche, problem, audience }) => {
