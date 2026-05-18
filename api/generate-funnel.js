@@ -33,9 +33,62 @@ const getNicheRules = (nicheCategory) => {
   )
 }
 
+const generateHeroImagePrompt = ({
+  niche = '',
+  offer = '',
+  audience = '',
+  emotionalAngle = '',
+  visualTone = '',
+}) => {
+  return `
+Create a cinematic mobile-first beauty funnel hero image.
+
+CAREER:
+${niche}
+
+SPECIFIC OFFER OR SERVICE:
+${offer}
+
+TARGET AUDIENCE:
+${audience}
+
+EMOTIONAL DIRECTION:
+${emotionalAngle}
+
+VISUAL TONE:
+${visualTone}
+
+IMAGE REQUIREMENTS:
+- premium advertising photography
+- vertical mobile composition
+- luxury beauty campaign aesthetic
+- emotionally engaging
+- soft cinematic lighting
+- realistic skin texture
+- modern creator-style branding
+- high-end commercial quality
+- social media funnel aesthetic
+- space for headline text overlay
+- visually clean composition
+
+IMPORTANT:
+The image MUST visually match the selected beauty career and offer.
+
+Do NOT generate generic beauty imagery.
+`.trim()
+}
+
 const fallbackFunnel = ({ currentData = {}, niche, problem, audience }) => {
   const nicheCategory = getNicheCategory(niche)
   const rules = getNicheRules(nicheCategory)
+
+  const heroImagePrompt = generateHeroImagePrompt({
+    niche,
+    offer: problem,
+    audience,
+    emotionalAngle: rules.emotionalAngles,
+    visualTone: rules.visualTone,
+  })
 
   return {
     ...currentData,
@@ -44,6 +97,7 @@ const fallbackFunnel = ({ currentData = {}, niche, problem, audience }) => {
       visualTone: `${nicheCategory} focused creator funnel`,
       layoutStyle: 'mobile-first creator funnel',
       colorMood: 'black, white, neutral',
+      heroImagePrompt,
     },
     creator: {
       name: currentData?.creator?.name || 'Creator',
@@ -55,8 +109,9 @@ const fallbackFunnel = ({ currentData = {}, niche, problem, audience }) => {
     hero: {
       headline: `Premium ${niche} Experience`,
       subheadline: `A focused ${niche} solution for ${audience}.`,
-      ctaLabel: rules.cta,
+      ctaLabel: rules.ctaStyle,
       creatorMicroScript: `Here is my recommended ${niche} approach for ${problem}.`,
+      heroImagePrompt,
     },
     problems: [
       {
@@ -88,7 +143,7 @@ const fallbackFunnel = ({ currentData = {}, niche, problem, audience }) => {
         image: '/images/product-1.webp',
         name: `${niche} Starter Offer`,
         benefit: `A focused ${niche} option for ${problem}`,
-        cta: rules.cta,
+        cta: rules.ctaStyle,
         href: '#',
         learnMore: {
           title: `Learn more about this ${niche} offer`,
@@ -104,7 +159,7 @@ const fallbackFunnel = ({ currentData = {}, niche, problem, audience }) => {
       barTagline: `Simple ${niche} routine`,
       finalHeadline: `Ready for your ${niche} transformation?`,
       finalSubtext: `Start with a focused plan for ${problem}.`,
-      finalLabel: rules.cta,
+      finalLabel: rules.ctaStyle,
     },
     reusableAssets: {
       hooks: [],
@@ -148,6 +203,23 @@ const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rule
     audience,
   })
 
+  const heroImagePrompt = generateHeroImagePrompt({
+    niche,
+    offer:
+      aiData?.products?.[0]?.name ||
+      aiData?.hero?.headline ||
+      problem,
+    audience,
+    emotionalAngle:
+      Array.isArray(aiData?.reusableAssets?.emotionalAngles)
+        ? aiData.reusableAssets.emotionalAngles.join(', ')
+        : rules.emotionalAngles,
+    visualTone:
+      aiData?.template?.visualTone ||
+      templateData?.visualTone ||
+      rules.visualTone,
+  })
+
   return {
     ...fallback,
 
@@ -155,6 +227,7 @@ const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rule
       ...fallback.template,
       ...templateData,
       ...(aiData?.template || {}),
+      heroImagePrompt,
     },
 
     creator: {
@@ -167,7 +240,8 @@ const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rule
     hero: {
       ...fallback.hero,
       ...(aiData?.hero || {}),
-      ctaLabel: aiData?.hero?.ctaLabel || rules.cta,
+      ctaLabel: aiData?.hero?.ctaLabel || rules.ctaStyle,
+      heroImagePrompt,
     },
 
     problems: Array.isArray(aiData?.problemCards)
@@ -196,7 +270,7 @@ const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rule
             product?.shortDescription ||
             product?.description ||
             `A focused ${niche} option.`,
-          cta: product?.cta || product?.ctaLabel || rules.cta,
+          cta: product?.cta || product?.ctaLabel || rules.ctaStyle,
           href: product?.href || '#',
           learnMore: product?.learnMore || {
             title: `Learn more about ${product?.name || `${niche} Offer`}`,
@@ -214,7 +288,7 @@ const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rule
           barTagline: fallback.cta.barTagline,
           finalHeadline: aiData.finalCta.headline || fallback.cta.finalHeadline,
           finalSubtext: aiData.finalCta.subtext || fallback.cta.finalSubtext,
-          finalLabel: aiData.finalCta.ctaLabel || rules.cta,
+          finalLabel: aiData.finalCta.ctaLabel || rules.ctaStyle,
         }
       : fallback.cta,
 
@@ -268,24 +342,26 @@ export default async function handler(req, res) {
       TEMPLATE_INTELLIGENCE?.[nicheCategory]?.glam ||
       {
         templateId: `${nicheCategory}-creator-funnel`,
-        visualTone: `${nicheCategory} focused creator funnel`,
+        visualTone:
+          rules.visualTone ||
+          `${nicheCategory} focused creator funnel`,
         layoutStyle: 'mobile-first creator funnel',
         colorMood: 'black, white, neutral',
       }
 
     const privatePrompt = buildFunnelPrompt({
       creatorName: currentData?.creator?.name || 'Creator',
-      creatorType: rules.voice,
+      creatorType: rules.creatorVoice,
       niche,
       productName: `${niche} Offer`,
       productDescription: problem,
       targetAudience: audience,
       offerType: niche,
-      tone: templateData?.visualTone || rules.voice,
-      callToAction: rules.cta,
-      allowedVocabulary: rules.allowed,
-      blockedVocabulary: rules.blocked,
-      emotionalAngle: rules.allowed,
+      tone: templateData?.visualTone || rules.visualTone,
+      callToAction: rules.ctaStyle,
+      allowedVocabulary: rules.allowedVocabulary,
+      blockedVocabulary: rules.blockedVocabulary,
+      emotionalAngle: rules.emotionalAngles,
     })
 
     const enforcedPrompt = `
@@ -293,13 +369,16 @@ ${privatePrompt}
 
 STRICT NICHE CONTROL:
 The selected niche is "${niche}".
-You must ONLY generate content related to: ${rules.allowed}.
-You must NOT use or imply these words/topics: ${rules.blocked}.
+You must ONLY generate content related to: ${rules.allowedVocabulary}.
+You must NOT use or imply these words/topics: ${rules.blockedVocabulary}.
 
 PRODUCT/SERVICE CARD RULE:
 Generate product/service cards dynamically for the selected niche.
 Do NOT use generic skincare products unless the selected niche is skincare.
 For Braids, product/service cards must be braid services, braid prep, braid maintenance, protective style care, scalp comfort, edge care, or braid longevity.
+
+IMAGE PROMPT RULE:
+Also make sure the funnel direction can support a matching hero image based on the selected career, offer, audience, and emotional angle.
 
 Return ONLY valid JSON.
 `
@@ -346,7 +425,7 @@ Return ONLY valid JSON.
 
     const parsedJson = safeParseJson(rawText)
 
-    if (!parsedJson || containsBlockedWords(parsedJson, rules.blocked)) {
+    if (!parsedJson || containsBlockedWords(parsedJson, rules.blockedVocabulary)) {
       return res.status(200).json(
         fallbackFunnel({
           currentData,
