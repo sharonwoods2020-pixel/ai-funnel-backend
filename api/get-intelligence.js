@@ -1,0 +1,90 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+)
+
+function normalizeCareerKey(niche = '') {
+  const normalized = niche.toLowerCase().trim()
+
+  if (
+    normalized.includes('braid') ||
+    normalized.includes('braider') ||
+    normalized.includes('hair braider')
+  ) {
+    return 'hair-braider'
+  }
+
+  return normalized.replace(/\s+/g, '-')
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({
+      error: 'Method not allowed. Use POST.',
+    })
+  }
+
+  try {
+    const { niche = '' } = req.body || {}
+
+    const careerKey = normalizeCareerKey(niche)
+
+    const [
+      careerResult,
+      productsResult,
+      servicesResult,
+      visualsResult,
+      hooksResult,
+    ] = await Promise.all([
+      supabase
+        .from('careers')
+        .select('*')
+        .eq('career_key', careerKey)
+        .maybeSingle(),
+
+      supabase
+        .from('products')
+        .select('*')
+        .eq('career_key', careerKey),
+
+      supabase
+        .from('services')
+        .select('*')
+        .eq('career_key', careerKey),
+
+      supabase
+        .from('visuals')
+        .select('*')
+        .eq('career_key', careerKey),
+
+      supabase
+        .from('hooks')
+        .select('*')
+        .eq('career_key', careerKey),
+    ])
+
+    return res.status(200).json({
+      careerKey,
+      career: careerResult.data || null,
+      products: productsResult.data || [],
+      services: servicesResult.data || [],
+      visuals: visualsResult.data || [],
+      hooks: hooksResult.data || [],
+      errors: [
+        careerResult.error,
+        productsResult.error,
+        servicesResult.error,
+        visualsResult.error,
+        hooksResult.error,
+      ].filter(Boolean),
+    })
+  } catch (error) {
+    console.error('GET INTELLIGENCE API ERROR:', error)
+
+    return res.status(500).json({
+      error: 'Failed to load intelligence.',
+    })
+  }
+}
