@@ -1,12 +1,20 @@
-import { PRODUCT_INTELLIGENCE } from '../data/productIntelligence.js'
+import { createClient } from '@supabase/supabase-js'
 import { CAREER_INTELLIGENCE } from '../data/careerIntelligence.js'
 import { TEMPLATE_INTELLIGENCE } from '../data/templateIntelligence.js'
 import { buildFunnelPrompt } from '../aiFunnelPrompt.js'
 
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+)
+
+const FALLBACK_HERO =
+  'https://images.unsplash.com/photo-1595475038784-bbe439ff41e6?auto=format&fit=crop&w=1400&q=80'
+
 const getNicheCategory = (niche = '') => {
   const n = niche.toLowerCase().trim()
 
-  if (n.includes('braid') || n.includes('knotless')) return 'braids'
+  if (n.includes('braid') || n.includes('knotless') || n.includes('loc')) return 'braids'
   if (n.includes('hair') || n.includes('wig') || n.includes('extension')) return 'hair'
   if (n.includes('barber') || n.includes('beard') || n.includes('fade')) return 'barber'
   if (n.includes('nail') || n.includes('acrylic') || n.includes('gel')) return 'nails'
@@ -16,6 +24,21 @@ const getNicheCategory = (niche = '') => {
   if (n.includes('gift') || n.includes('basket') || n.includes('bundle')) return 'giftbaskets'
 
   return 'beauty'
+}
+
+const normalizeCareerKey = (niche = '') => {
+  const normalized = niche.toLowerCase().trim()
+
+  if (
+    normalized.includes('braid') ||
+    normalized.includes('braider') ||
+    normalized.includes('hair braider') ||
+    normalized.includes('loc')
+  ) {
+    return 'hair-braider'
+  }
+
+  return normalized.replace(/\s+/g, '-')
 }
 
 const getNicheRules = (nicheCategory) => {
@@ -33,115 +56,149 @@ const getNicheRules = (nicheCategory) => {
   )
 }
 
-const generateHeroImagePrompt = ({
-  niche = '',
-  offer = '',
-  audience = '',
-  emotionalAngle = '',
-  visualTone = '',
-}) => {
-  return `
-Create a cinematic mobile-first beauty funnel hero image.
+const cleanImageUrl = (value = '') => {
+  if (typeof value !== 'string') return ''
 
-CAREER:
-${niche}
+  const cleaned = value
+    .replace(/^url\(/, '')
+    .replace(/\)$/, '')
+    .replaceAll('"', '')
+    .replaceAll("'", '')
+    .trim()
 
-SPECIFIC OFFER OR SERVICE:
-${offer}
+  if (!cleaned) return ''
+  if (cleaned.startsWith('http')) return cleaned
+  if (cleaned.startsWith('data:image')) return cleaned
+  if (cleaned.startsWith('/')) return cleaned
 
-TARGET AUDIENCE:
-${audience}
-
-EMOTIONAL DIRECTION:
-${emotionalAngle}
-
-VISUAL TONE:
-${visualTone}
-
-IMAGE REQUIREMENTS:
-${
-  niche.toLowerCase().includes('barber')
-    ? `
-- premium barber shop aesthetic
-- masculine grooming campaign
-- sharp fade haircut
-- barber tools visible
-- editorial barber photography
-- confident masculine energy
-`
-    : niche.toLowerCase().includes('nail')
-      ? `
-- luxury nail studio aesthetic
-- manicure focused composition
-- gel nails and nail artistry
-- polished feminine nail campaign
-- hands-focused beauty photography
-`
-      : niche.toLowerCase().includes('tattoo')
-        ? `
-- modern tattoo studio aesthetic
-- tattoo culture photography
-- artistic edgy composition
-- visible tattoo artwork
-- editorial tattoo campaign lighting
-`
-        : niche.toLowerCase().includes('spa')
-          ? `
-- calming spa atmosphere
-- wellness aesthetic
-- massage or facial environment
-- relaxation-focused photography
-- luxury spa branding
-`
-          : niche.toLowerCase().includes('lash')
-            ? `
-- glam lash studio aesthetic
-- close-up lash beauty photography
-- premium lash extension campaign
-- soft glam makeup look
-`
-            : `
-- premium beauty advertising photography
-- luxury beauty campaign aesthetic
-- emotionally engaging
-- cinematic lighting
-- modern creator branding
-`
+  return ''
 }
 
-- vertical mobile composition
-- high-end commercial quality
-- social media funnel aesthetic
-- space for headline text overlay
-- visually clean composition
-
-IMPORTANT:
-The image MUST visually match the selected beauty career and offer.
-
-Do NOT generate generic beauty imagery.
-`.trim()
+const pickImage = (...values) => {
+  return values.map(cleanImageUrl).find(Boolean) || ''
 }
 
-const fallbackFunnel = ({ currentData = {}, niche, problem, audience }) => {
+const loadSupabaseIntelligence = async (careerKey) => {
+  try {
+    const [productsResult, servicesResult, visualsResult] = await Promise.all([
+      supabase.from('products').select('*').eq('career_key', careerKey),
+      supabase.from('services').select('*').eq('career_key', careerKey),
+      supabase.from('visuals').select('*').eq('career_key', careerKey),
+    ])
+
+    return {
+      products: productsResult.data || [],
+      services: servicesResult.data || [],
+      visuals: visualsResult.data || [],
+    }
+  } catch {
+    return {
+      products: [],
+      services: [],
+      visuals: [],
+    }
+  }
+}
+
+const getVisualImage = (visuals = []) => {
+  const heroVisual =
+    visuals.find((item) =>
+      String(item?.category || item?.type || item?.title || '')
+        .toLowerCase()
+        .includes('hero')
+    ) || visuals[0]
+
+  return pickImage(
+    heroVisual?.image_url,
+    heroVisual?.image,
+    heroVisual?.url,
+    heroVisual?.source_url
+  )
+}
+
+const mapSourceProducts = ({ aiProducts = [], sourceProducts = [], niche, audience, rules }) => {
+  const merged = aiProducts.length ? aiProducts : sourceProducts
+
+  if (!merged.length) {
+    return [
+      {
+        id: 'p1',
+        image: FALLBACK_HERO,
+        name: `${niche} Starter Offer`,
+        benefit: `A focused ${niche} option for ${audience}.`,
+        cta: rules.ctaStyle,
+        href: '#',
+      },
+    ]
+  }
+
+  return merged.slice(0, 3).map((product, index) => {
+    const sourceProduct = sourceProducts[index] || product
+
+    return {
+      id: product?.id || sourceProduct?.id || `p${index + 1}`,
+      image:
+        pickImage(
+          sourceProduct?.image_url,
+          sourceProduct?.image,
+          sourceProduct?.imageUrl,
+          sourceProduct?.thumbnail_url,
+          product?.image
+        ) || FALLBACK_HERO,
+      name:
+        product?.name ||
+        sourceProduct?.name ||
+        sourceProduct?.title ||
+        `${niche} Offer ${index + 1}`,
+      benefit:
+        product?.benefit ||
+        product?.shortDescription ||
+        sourceProduct?.benefit ||
+        sourceProduct?.description ||
+        `A focused ${niche} option.`,
+      cta: product?.cta || product?.ctaLabel || rules.ctaStyle,
+      href:
+        sourceProduct?.product_url ||
+        sourceProduct?.url ||
+        sourceProduct?.href ||
+        product?.href ||
+        '#',
+      learnMore: product?.learnMore || {
+        title: `Learn more about ${product?.name || sourceProduct?.name || `${niche} Offer`}`,
+        quickBenefit: product?.benefit || sourceProduct?.benefit || '',
+        whyItWorks: `Selected from the connected ${niche} intelligence source.`,
+        bestFor: audience,
+        howToUse: `Use as part of your ${niche} routine.`,
+        creatorInsight: `This supports the selected ${niche} goal.`,
+      },
+    }
+  })
+}
+
+const fallbackFunnel = ({ currentData = {}, niche, problem, audience, sourceProducts = [], visuals = [] }) => {
   const nicheCategory = getNicheCategory(niche)
   const rules = getNicheRules(nicheCategory)
 
-  const heroImagePrompt = generateHeroImagePrompt({
-    niche,
-    offer: problem,
-    audience,
-    emotionalAngle: rules.emotionalAngles,
-    visualTone: rules.visualTone,
-  })
+  const heroImage =
+    pickImage(
+      getVisualImage(visuals),
+      sourceProducts?.[0]?.image_url,
+      sourceProducts?.[0]?.image,
+      sourceProducts?.[0]?.thumbnail_url,
+      currentData?.hero?.backgroundImage,
+      currentData?.template?.coverImage,
+      currentData?.products?.[0]?.image
+    ) || FALLBACK_HERO
 
   return {
     ...currentData,
     template: {
+      ...(currentData?.template || {}),
       templateId: `${nicheCategory}-creator-funnel`,
       visualTone: `${nicheCategory} focused creator funnel`,
       layoutStyle: 'mobile-first creator funnel',
       colorMood: 'black, white, neutral',
-      heroImagePrompt,
+      coverImage: heroImage,
     },
     creator: {
       name: currentData?.creator?.name || 'Creator',
@@ -151,11 +208,13 @@ const fallbackFunnel = ({ currentData = {}, niche, problem, audience }) => {
       videoSrc: currentData?.creator?.videoSrc || '',
     },
     hero: {
+      ...(currentData?.hero || {}),
       headline: `Premium ${niche} Experience`,
       subheadline: `A focused ${niche} solution for ${audience}.`,
       ctaLabel: rules.ctaStyle,
       creatorMicroScript: `Here is my recommended ${niche} approach for ${problem}.`,
-      heroImagePrompt,
+      backgroundImage: heroImage,
+      heroImage,
     },
     problems: [
       {
@@ -181,24 +240,13 @@ const fallbackFunnel = ({ currentData = {}, niche, problem, audience }) => {
         tip: `Maintain the ${niche} result with simple follow-up care.`,
       },
     ],
-    products: [
-      {
-        id: 'p1',
-        image: '/images/product-1.webp',
-        name: `${niche} Starter Offer`,
-        benefit: `A focused ${niche} option for ${problem}`,
-        cta: rules.ctaStyle,
-        href: '#',
-        learnMore: {
-          title: `Learn more about this ${niche} offer`,
-          quickBenefit: `Helps support a better ${niche} result.`,
-          whyItWorks: `Built around the selected ${niche} category and audience need.`,
-          bestFor: audience,
-          howToUse: `Use this as part of your ${niche} routine.`,
-          creatorInsight: `This keeps the ${niche} offer simple and focused.`,
-        },
-      },
-    ],
+    products: mapSourceProducts({
+      aiProducts: [],
+      sourceProducts,
+      niche,
+      audience,
+      rules,
+    }),
     cta: {
       barTagline: `Simple ${niche} routine`,
       finalHeadline: `Ready for your ${niche} transformation?`,
@@ -239,30 +287,38 @@ const containsBlockedWords = (data, blocked = '') => {
   return blockedList.some((word) => allText.includes(word))
 }
 
-const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rules, templateData }) => {
+const normalizeAiFunnel = ({
+  aiData,
+  currentData,
+  niche,
+  problem,
+  audience,
+  rules,
+  templateData,
+  sourceProducts,
+  sourceServices,
+  visuals,
+}) => {
   const fallback = fallbackFunnel({
     currentData,
     niche,
     problem,
     audience,
+    sourceProducts,
+    visuals,
   })
 
-  const heroImagePrompt = generateHeroImagePrompt({
-    niche,
-    offer:
-      aiData?.products?.[0]?.name ||
-      aiData?.hero?.headline ||
-      problem,
-    audience,
-    emotionalAngle:
-      Array.isArray(aiData?.reusableAssets?.emotionalAngles)
-        ? aiData.reusableAssets.emotionalAngles.join(', ')
-        : rules.emotionalAngles,
-    visualTone:
-      aiData?.template?.visualTone ||
-      templateData?.visualTone ||
-      rules.visualTone,
-  })
+  const heroImage =
+    pickImage(
+      getVisualImage(visuals),
+      sourceProducts?.[0]?.image_url,
+      sourceProducts?.[0]?.image,
+      sourceProducts?.[0]?.thumbnail_url,
+      currentData?.hero?.backgroundImage,
+      currentData?.template?.coverImage,
+      currentData?.products?.[0]?.image,
+      fallback?.hero?.backgroundImage
+    ) || FALLBACK_HERO
 
   return {
     ...fallback,
@@ -271,7 +327,7 @@ const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rule
       ...fallback.template,
       ...templateData,
       ...(aiData?.template || {}),
-      heroImagePrompt,
+      coverImage: heroImage,
     },
 
     creator: {
@@ -285,7 +341,8 @@ const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rule
       ...fallback.hero,
       ...(aiData?.hero || {}),
       ctaLabel: aiData?.hero?.ctaLabel || rules.ctaStyle,
-      heroImagePrompt,
+      backgroundImage: heroImage,
+      heroImage,
     },
 
     problems: Array.isArray(aiData?.problemCards)
@@ -304,28 +361,13 @@ const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rule
         ? aiData.routineSteps
         : fallback.routineSteps,
 
-    products: Array.isArray(aiData?.products) && aiData.products.length
-      ? aiData.products.slice(0, 3).map((product, index) => ({
-          id: product?.id || `p${index + 1}`,
-          image: product?.image || `/images/product-${index + 1}.webp`,
-          name: product?.name || `${niche} Offer ${index + 1}`,
-          benefit:
-            product?.benefit ||
-            product?.shortDescription ||
-            product?.description ||
-            `A focused ${niche} option.`,
-          cta: product?.cta || product?.ctaLabel || rules.ctaStyle,
-          href: product?.href || '#',
-          learnMore: product?.learnMore || {
-            title: `Learn more about ${product?.name || `${niche} Offer`}`,
-            quickBenefit: product?.benefit || '',
-            whyItWorks: `Created for ${niche} needs.`,
-            bestFor: audience,
-            howToUse: `Use as part of your ${niche} routine.`,
-            creatorInsight: `This supports the selected ${niche} goal.`,
-          },
-        }))
-      : fallback.products,
+    products: mapSourceProducts({
+      aiProducts: Array.isArray(aiData?.products) ? aiData.products : [],
+      sourceProducts: sourceProducts?.length ? sourceProducts : sourceServices,
+      niche,
+      audience,
+      rules,
+    }),
 
     cta: aiData?.finalCta
       ? {
@@ -337,21 +379,11 @@ const normalizeAiFunnel = ({ aiData, currentData, niche, problem, audience, rule
       : fallback.cta,
 
     reusableAssets: {
-      hooks: Array.isArray(aiData?.reusableAssets?.hooks)
-        ? aiData.reusableAssets.hooks
-        : [],
-      ctaVariants: Array.isArray(aiData?.reusableAssets?.ctaVariants)
-        ? aiData.reusableAssets.ctaVariants
-        : [],
-      socialCaptions: Array.isArray(aiData?.reusableAssets?.socialCaptions)
-        ? aiData.reusableAssets.socialCaptions
-        : [],
-      creatorScripts: Array.isArray(aiData?.reusableAssets?.creatorScripts)
-        ? aiData.reusableAssets.creatorScripts
-        : [],
-      emotionalAngles: Array.isArray(aiData?.reusableAssets?.emotionalAngles)
-        ? aiData.reusableAssets.emotionalAngles
-        : [],
+      hooks: Array.isArray(aiData?.reusableAssets?.hooks) ? aiData.reusableAssets.hooks : [],
+      ctaVariants: Array.isArray(aiData?.reusableAssets?.ctaVariants) ? aiData.reusableAssets.ctaVariants : [],
+      socialCaptions: Array.isArray(aiData?.reusableAssets?.socialCaptions) ? aiData.reusableAssets.socialCaptions : [],
+      creatorScripts: Array.isArray(aiData?.reusableAssets?.creatorScripts) ? aiData.reusableAssets.creatorScripts : [],
+      emotionalAngles: Array.isArray(aiData?.reusableAssets?.emotionalAngles) ? aiData.reusableAssets.emotionalAngles : [],
     },
   }
 }
@@ -379,16 +411,17 @@ export default async function handler(req, res) {
     const audience = generationInputs?.audience || 'beauty shoppers'
 
     const nicheCategory = getNicheCategory(niche)
+    const careerKey = normalizeCareerKey(niche)
     const rules = getNicheRules(nicheCategory)
+
+    const sourceData = await loadSupabaseIntelligence(careerKey)
 
     const templateData =
       TEMPLATE_INTELLIGENCE?.[nicheCategory]?.luxury ||
       TEMPLATE_INTELLIGENCE?.[nicheCategory]?.glam ||
       {
         templateId: `${nicheCategory}-creator-funnel`,
-        visualTone:
-          rules.visualTone ||
-          `${nicheCategory} focused creator funnel`,
+        visualTone: rules.visualTone || `${nicheCategory} focused creator funnel`,
         layoutStyle: 'mobile-first creator funnel',
         colorMood: 'black, white, neutral',
       }
@@ -397,7 +430,7 @@ export default async function handler(req, res) {
       creatorName: currentData?.creator?.name || 'Creator',
       creatorType: rules.creatorVoice,
       niche,
-      productName: `${niche} Offer`,
+      productName: problem || `${niche} Offer`,
       productDescription: problem,
       targetAudience: audience,
       offerType: niche,
@@ -416,13 +449,21 @@ The selected niche is "${niche}".
 You must ONLY generate content related to: ${rules.allowedVocabulary}.
 You must NOT use or imply these words/topics: ${rules.blockedVocabulary}.
 
+CONNECTED SOURCE RULE:
+Use the connected source data conceptually.
+Do NOT invent random image URLs.
+Images are assigned by the system from Supabase / BD / GetPaidMarketplace stored URLs.
+
+AVAILABLE SOURCE PRODUCTS:
+${JSON.stringify(sourceData.products.slice(0, 5))}
+
+AVAILABLE SOURCE SERVICES:
+${JSON.stringify(sourceData.services.slice(0, 5))}
+
 PRODUCT/SERVICE CARD RULE:
 Generate product/service cards dynamically for the selected niche.
 Do NOT use generic skincare products unless the selected niche is skincare.
-For Braids, product/service cards must be braid services, braid prep, braid maintenance, protective style care, scalp comfort, edge care, or braid longevity.
-
-IMAGE PROMPT RULE:
-Also make sure the funnel direction can support a matching hero image based on the selected career, offer, audience, and emotional angle.
+For Braids, cards must be braid services, braid prep, braid maintenance, protective style care, scalp comfort, edge care, or braid longevity.
 
 Return ONLY valid JSON.
 `
@@ -439,8 +480,7 @@ Return ONLY valid JSON.
         input: [
           {
             role: 'system',
-            content:
-              'You are a private AI funnel engine. Return only valid JSON. Never return markdown or explanations.',
+            content: 'You are a private AI funnel engine. Return only valid JSON. Never return markdown or explanations.',
           },
           {
             role: 'user',
@@ -457,6 +497,8 @@ Return ONLY valid JSON.
           niche,
           problem,
           audience,
+          sourceProducts: sourceData.products,
+          visuals: sourceData.visuals,
         }),
       )
     }
@@ -476,6 +518,8 @@ Return ONLY valid JSON.
           niche,
           problem,
           audience,
+          sourceProducts: sourceData.products,
+          visuals: sourceData.visuals,
         }),
       )
     }
@@ -488,7 +532,12 @@ Return ONLY valid JSON.
       audience,
       rules,
       templateData,
+      sourceProducts: sourceData.products,
+      sourceServices: sourceData.services,
+      visuals: sourceData.visuals,
     })
+
+    console.log('FINAL HERO IMAGE:', generatedFunnel?.hero?.backgroundImage)
 
     return res.status(200).json(generatedFunnel)
   } catch (error) {
