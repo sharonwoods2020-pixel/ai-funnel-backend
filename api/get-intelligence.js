@@ -77,13 +77,58 @@ export default async function handler(req, res) {
         .eq('career_key', careerKey),
     ])
 
+    const products = productsResult.data || []
+    const services = servicesResult.data || []
+    const visuals = visualsResult.data || []
+
+    const heroVisual =
+      visuals.find((item) =>
+        String(
+          item?.category ||
+          item?.type ||
+          item?.title ||
+          ''
+        )
+          .toLowerCase()
+          .includes('hero')
+      ) || visuals[0]
+
+    const heroImage =
+      heroVisual?.image_url ||
+      heroVisual?.image ||
+      heroVisual?.url ||
+      products?.[0]?.image_url ||
+      products?.[0]?.image ||
+      products?.[0]?.url ||
+      services?.[0]?.image_url ||
+      services?.[0]?.image ||
+      services?.[0]?.url ||
+      ''
+
     return res.status(200).json({
       careerKey,
+
       career: careerResult.data || null,
-      products: productsResult.data || [],
-      services: servicesResult.data || [],
-      visuals: visualsResult.data || [],
+
+      products,
+
+      services,
+
+      visuals,
+
       hooks: hooksResult.data || [],
+
+      heroImage,
+
+      hero: {
+        backgroundImage: heroImage,
+        heroImage,
+      },
+
+      template: {
+        coverImage: heroImage,
+      },
+
       errors: [
         careerResult.error,
         productsResult.error,
