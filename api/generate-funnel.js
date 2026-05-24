@@ -80,22 +80,34 @@ const pickImage = (...values) => {
 
 const loadSupabaseIntelligence = async (careerKey) => {
   try {
-    const [productsResult, servicesResult, visualsResult] = await Promise.all([
+    const [
+      careerResult,
+      productsResult,
+      servicesResult,
+      visualsResult,
+      hooksResult,
+    ] = await Promise.all([
+      supabase.from('careers').select('*').eq('career_key', careerKey).maybeSingle(),
       supabase.from('products').select('*').eq('career_key', careerKey),
       supabase.from('services').select('*').eq('career_key', careerKey),
       supabase.from('visuals').select('*').eq('career_key', careerKey),
+      supabase.from('hooks').select('*').eq('career_key', careerKey),
     ])
 
     return {
+      career: careerResult.data || null,
       products: productsResult.data || [],
       services: servicesResult.data || [],
       visuals: visualsResult.data || [],
+      hooks: hooksResult.data || [],
     }
   } catch {
     return {
+      career: null,
       products: [],
       services: [],
       visuals: [],
+      hooks: [],
     }
   }
 }
@@ -436,9 +448,18 @@ export default async function handler(req, res) {
       offerType: niche,
       tone: templateData?.visualTone || rules.visualTone,
       callToAction: rules.ctaStyle,
-      allowedVocabulary: rules.allowedVocabulary,
-      blockedVocabulary: rules.blockedVocabulary,
-      emotionalAngle: rules.emotionalAngles,
+      intelligence: {
+        career: sourceData.career || {
+          name: niche,
+          career_name: niche,
+          career_key: careerKey,
+          category: nicheCategory,
+        },
+        products: sourceData.products || [],
+        services: sourceData.services || [],
+        visuals: sourceData.visuals || [],
+        hooks: sourceData.hooks || [],
+      },
     })
 
     const enforcedPrompt = `
@@ -459,6 +480,9 @@ ${JSON.stringify(sourceData.products.slice(0, 5))}
 
 AVAILABLE SOURCE SERVICES:
 ${JSON.stringify(sourceData.services.slice(0, 5))}
+
+AVAILABLE SOURCE HOOKS:
+${JSON.stringify(sourceData.hooks.slice(0, 5))}
 
 PRODUCT/SERVICE CARD RULE:
 Generate product/service cards dynamically for the selected niche.
