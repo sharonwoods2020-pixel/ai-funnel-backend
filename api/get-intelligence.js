@@ -67,7 +67,7 @@ export default async function handler(req, res) {
         .eq('career_key', careerKey),
 
       supabase
-        .from('visuals')
+        .from('career_visuals')
         .select('*')
         .eq('career_key', careerKey),
 
