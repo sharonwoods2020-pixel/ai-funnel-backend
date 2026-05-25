@@ -12,17 +12,19 @@ function setCorsHeaders(res) {
 }
 
 function normalizeCareerKey(niche = '') {
-  const normalized = niche.toLowerCase().trim()
+  return String(niche)
+    .toLowerCase()
+    .trim()
+}
 
-  if (
-    normalized.includes('braid') ||
-    normalized.includes('braider') ||
-    normalized.includes('hair braider')
-  ) {
-    return 'hair-braider'
-  }
-
-  return normalized.replace(/\s+/g, '-')
+function pickImage(...values) {
+  return (
+    values.find(
+      (value) =>
+        typeof value === 'string' &&
+        value.trim() !== ''
+    ) || ''
+  )
 }
 
 export default async function handler(req, res) {
@@ -81,29 +83,45 @@ export default async function handler(req, res) {
     const services = servicesResult.data || []
     const visuals = visualsResult.data || []
 
-    const heroVisual =
-      visuals.find((item) =>
-        String(
+    const heroVisuals = visuals.filter((item) =>
+      String(
+        item?.visual_type ||
           item?.category ||
           item?.type ||
           item?.title ||
           ''
-        )
-          .toLowerCase()
-          .includes('hero')
-      ) || visuals[0]
+      )
+        .toLowerCase()
+        .includes('hero')
+    )
 
-    const heroImage =
-      heroVisual?.image_url ||
-      heroVisual?.image ||
-      heroVisual?.url ||
-      products?.[0]?.image_url ||
-      products?.[0]?.image ||
-      products?.[0]?.url ||
-      services?.[0]?.image_url ||
-      services?.[0]?.image ||
-      services?.[0]?.url ||
-      ''
+    const imagePool =
+      heroVisuals.length > 0
+        ? heroVisuals
+        : visuals
+
+    const heroVisual =
+      imagePool.length > 0
+        ? imagePool[
+            Math.floor(
+              Math.random() * imagePool.length
+            )
+          ]
+        : null
+
+    const heroImage = pickImage(
+      heroVisual?.image_url,
+      heroVisual?.image,
+      heroVisual?.url,
+
+      products?.[0]?.image_url,
+      products?.[0]?.image,
+      products?.[0]?.url,
+
+      services?.[0]?.image_url,
+      services?.[0]?.image,
+      services?.[0]?.url
+    )
 
     return res.status(200).json({
       careerKey,
@@ -124,7 +142,7 @@ export default async function handler(req, res) {
         backgroundImage: heroImage,
         heroImage,
       },
- 
+
       template: {
         coverImage: heroImage,
       },
@@ -138,7 +156,10 @@ export default async function handler(req, res) {
       ].filter(Boolean),
     })
   } catch (error) {
-    console.error('GET INTELLIGENCE API ERROR:', error)
+    console.error(
+      'GET INTELLIGENCE API ERROR:',
+      error
+    )
 
     return res.status(500).json({
       error: 'Failed to load intelligence.',
