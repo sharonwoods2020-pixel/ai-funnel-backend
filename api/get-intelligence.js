@@ -124,7 +124,7 @@ export default async function handler(req, res) {
         backgroundImage: heroImage,
         heroImage,
       },
-
+ 
       template: {
         coverImage: heroImage,
       },
