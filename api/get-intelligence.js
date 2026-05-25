@@ -12,7 +12,52 @@ function setCorsHeaders(res) {
 }
 
 function normalizeCareerKey(niche = '') {
-  return String(niche).toLowerCase().trim()
+  const normalized = String(niche)
+    .toLowerCase()
+    .trim()
+
+  // BRAIDS
+  if (
+    normalized.includes('knotless') ||
+    normalized.includes('braid') ||
+    normalized.includes('braider') ||
+    normalized.includes('braids')
+  ) {
+    return 'knotless-braids'
+  }
+
+  // BARBER
+  if (
+    normalized.includes('barber') ||
+    normalized.includes('fade')
+  ) {
+    return 'barber'
+  }
+
+  // NAILS
+  if (
+    normalized.includes('nail')
+  ) {
+    return 'nails'
+  }
+
+  // LASHES
+  if (
+    normalized.includes('lash') ||
+    normalized.includes('brow')
+  ) {
+    return 'lash-brows'
+  }
+
+  // SKINCARE
+  if (
+    normalized.includes('skin') ||
+    normalized.includes('facial')
+  ) {
+    return 'skincare'
+  }
+
+  return normalized
 }
 
 function pickImage(...values) {
