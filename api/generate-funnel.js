@@ -8,8 +8,7 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 )
 
-const FALLBACK_HERO =
-  'https://images.unsplash.com/photo-1595475038784-bbe439ff41e6?auto=format&fit=crop&w=1400&q=80'
+const FALLBACK_HERO = ''
 
 const getNicheCategory = (niche = '') => {
   const n = niche.toLowerCase().trim()
