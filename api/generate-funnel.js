@@ -112,18 +112,44 @@ const loadSupabaseIntelligence = async (careerKey) => {
 }
 
 const getVisualImage = (visuals = []) => {
-  const heroVisual =
-    visuals.find((item) =>
-      String(item?.category || item?.type || item?.title || '')
-        .toLowerCase()
-        .includes('hero')
-    ) || visuals[0]
+  if (!Array.isArray(visuals) || visuals.length === 0) {
+    return ''
+  }
+
+  const heroVisuals = visuals.filter((item) =>
+    String(
+      item?.visual_type ||
+      item?.category ||
+      item?.type ||
+      item?.title ||
+      ''
+    )
+      .toLowerCase()
+      .includes('hero')
+  )
+
+  const imagePool =
+    heroVisuals.length > 0
+      ? heroVisuals
+      : visuals
+
+  const randomVisual =
+    imagePool[
+      Math.floor(
+        Math.random() * imagePool.length
+      )
+    ]
+
+  console.log(
+    'RANDOM VISUAL SELECTED:',
+    randomVisual
+  )
 
   return pickImage(
-    heroVisual?.image_url,
-    heroVisual?.image,
-    heroVisual?.url,
-    heroVisual?.source_url
+    randomVisual?.image_url,
+    randomVisual?.image,
+    randomVisual?.url,
+    randomVisual?.source_url
   )
 }
 
