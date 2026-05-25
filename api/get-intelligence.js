@@ -12,9 +12,7 @@ function setCorsHeaders(res) {
 }
 
 function normalizeCareerKey(niche = '') {
-  return String(niche)
-    .toLowerCase()
-    .trim()
+  return String(niche).toLowerCase().trim()
 }
 
 function pickImage(...values) {
@@ -25,6 +23,14 @@ function pickImage(...values) {
         value.trim() !== ''
     ) || ''
   )
+}
+
+function pickRandom(items = []) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return null
+  }
+
+  return items[Math.floor(Math.random() * items.length)]
 }
 
 export default async function handler(req, res) {
@@ -42,7 +48,6 @@ export default async function handler(req, res) {
 
   try {
     const { niche = '' } = req.body || {}
-
     const careerKey = normalizeCareerKey(niche)
 
     const [
@@ -95,29 +100,16 @@ export default async function handler(req, res) {
         .includes('hero')
     )
 
-    const imagePool =
-      heroVisuals.length > 0
-        ? heroVisuals
-        : visuals
-
-    const heroVisual =
-      imagePool.length > 0
-        ? imagePool[
-            Math.floor(
-              Math.random() * imagePool.length
-            )
-          ]
-        : null
+    const imagePool = heroVisuals.length > 0 ? heroVisuals : visuals
+    const heroVisual = pickRandom(imagePool)
 
     const heroImage = pickImage(
       heroVisual?.image_url,
       heroVisual?.image,
       heroVisual?.url,
-
       products?.[0]?.image_url,
       products?.[0]?.image,
       products?.[0]?.url,
-
       services?.[0]?.image_url,
       services?.[0]?.image,
       services?.[0]?.url
@@ -125,28 +117,20 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       careerKey,
-
       career: careerResult.data || null,
-
       products,
-
       services,
-
       visuals,
-
+      selectedVisual: heroVisual,
       hooks: hooksResult.data || [],
-
       heroImage,
-
       hero: {
         backgroundImage: heroImage,
         heroImage,
       },
-
       template: {
         coverImage: heroImage,
       },
-
       errors: [
         careerResult.error,
         productsResult.error,
@@ -156,10 +140,7 @@ export default async function handler(req, res) {
       ].filter(Boolean),
     })
   } catch (error) {
-    console.error(
-      'GET INTELLIGENCE API ERROR:',
-      error
-    )
+    console.error('GET INTELLIGENCE API ERROR:', error)
 
     return res.status(500).json({
       error: 'Failed to load intelligence.',
