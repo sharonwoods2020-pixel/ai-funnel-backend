@@ -134,7 +134,7 @@ const mapSourceProducts = ({ aiProducts = [], sourceProducts = [], niche, audien
     return [
       {
         id: 'p1',
-        image: FALLBACK_HERO,
+        image: '',
         name: `${niche} Starter Offer`,
         benefit: `A focused ${niche} option for ${audience}.`,
         cta: rules.ctaStyle,
@@ -148,14 +148,13 @@ const mapSourceProducts = ({ aiProducts = [], sourceProducts = [], niche, audien
 
     return {
       id: product?.id || sourceProduct?.id || `p${index + 1}`,
-      image:
-        pickImage(
-          sourceProduct?.image_url,
-          sourceProduct?.image,
-          sourceProduct?.imageUrl,
-          sourceProduct?.thumbnail_url,
-          product?.image
-        ) || FALLBACK_HERO,
+      image: pickImage(
+        sourceProduct?.image_url,
+        sourceProduct?.image,
+        sourceProduct?.imageUrl,
+        sourceProduct?.thumbnail_url,
+        product?.image
+      ),
       name:
         product?.name ||
         sourceProduct?.name ||
@@ -195,10 +194,7 @@ const fallbackFunnel = ({ currentData = {}, niche, problem, audience, sourceProd
       getVisualImage(visuals),
       sourceProducts?.[0]?.image_url,
       sourceProducts?.[0]?.image,
-      sourceProducts?.[0]?.thumbnail_url,
-      currentData?.hero?.backgroundImage,
-      currentData?.template?.coverImage,
-      currentData?.products?.[0]?.image
+      sourceProducts?.[0]?.thumbnail_url
     ) || FALLBACK_HERO
 
   return {
@@ -324,11 +320,7 @@ const normalizeAiFunnel = ({
       getVisualImage(visuals),
       sourceProducts?.[0]?.image_url,
       sourceProducts?.[0]?.image,
-      sourceProducts?.[0]?.thumbnail_url,
-      currentData?.hero?.backgroundImage,
-      currentData?.template?.coverImage,
-      currentData?.products?.[0]?.image,
-      fallback?.hero?.backgroundImage
+      sourceProducts?.[0]?.thumbnail_url
     ) || FALLBACK_HERO
 
   return {
