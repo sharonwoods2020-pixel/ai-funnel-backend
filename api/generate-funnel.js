@@ -128,22 +128,8 @@ const getVisualImage = (visuals = []) => {
       .includes('hero')
   )
 
-  const imagePool =
-    heroVisuals.length > 0
-      ? heroVisuals
-      : visuals
-
-  const randomVisual =
-    imagePool[
-      Math.floor(
-        Math.random() * imagePool.length
-      )
-    ]
-
-  console.log(
-    'RANDOM VISUAL SELECTED:',
-    randomVisual
-  )
+  const imagePool = heroVisuals.length > 0 ? heroVisuals : visuals
+  const randomVisual = imagePool[Math.floor(Math.random() * imagePool.length)]
 
   return pickImage(
     randomVisual?.image_url,
@@ -211,6 +197,56 @@ const mapSourceProducts = ({ aiProducts = [], sourceProducts = [], niche, audien
   })
 }
 
+const getFallbackTheme = (niche = '') => {
+  const category = getNicheCategory(niche)
+
+  if (category === 'braids' || category === 'hair') {
+    return {
+      primary: '#2F5D3A',
+      secondary: '#D8B76A',
+      accent: '#1F2A1C',
+      surface: '#F8F3E7',
+      text: '#111111',
+      buttonText: '#FFFFFF',
+      mood: 'luxury-natural',
+    }
+  }
+
+  if (category === 'barber') {
+    return {
+      primary: '#1F2933',
+      secondary: '#C9A86A',
+      accent: '#111827',
+      surface: '#F4EFE7',
+      text: '#111111',
+      buttonText: '#FFFFFF',
+      mood: 'masculine-luxury',
+    }
+  }
+
+  if (category === 'lashes' || category === 'nails') {
+    return {
+      primary: '#B84C7D',
+      secondary: '#F3C9DA',
+      accent: '#5A233A',
+      surface: '#FFF4F8',
+      text: '#171017',
+      buttonText: '#FFFFFF',
+      mood: 'soft-glam',
+    }
+  }
+
+  return {
+    primary: '#2F5D3A',
+    secondary: '#D8B76A',
+    accent: '#1F2A1C',
+    surface: '#F8F3E7',
+    text: '#111111',
+    buttonText: '#FFFFFF',
+    mood: 'image-aware-beauty',
+  }
+}
+
 const fallbackFunnel = ({ currentData = {}, niche, problem, audience, sourceProducts = [], visuals = [] }) => {
   const nicheCategory = getNicheCategory(niche)
   const rules = getNicheRules(nicheCategory)
@@ -225,12 +261,32 @@ const fallbackFunnel = ({ currentData = {}, niche, problem, audience, sourceProd
 
   return {
     ...currentData,
+    theme: getFallbackTheme(niche),
+    funnelMode: 'service',
+    sectionLabels: {
+      productsEyebrow: 'BeautySourceDirect Picks',
+      products: 'Maintain This Look With Trusted Beauty Finds',
+      productsNote: 'Default product picks are pulled from BeautySourceDirect when no custom products are added.',
+      productButton: 'View Product',
+      routine: 'How This Look Comes Together',
+      problems: 'Is This Your Beauty Struggle?',
+      finalPill: '✦ Beauty Services',
+      finalCta: 'Ready To Book Your Next Look?',
+    },
+    ctaStrategy: {
+      primary: rules.ctaStyle,
+      secondary: 'Find Services',
+      creatorBar: 'Find Services',
+      finalButton: rules.ctaStyle,
+      finePrint: 'Provider pricing and availability may vary.',
+      productButton: 'View Product',
+    },
     template: {
       ...(currentData?.template || {}),
       templateId: `${nicheCategory}-creator-funnel`,
       visualTone: `${nicheCategory} focused creator funnel`,
       layoutStyle: 'mobile-first creator funnel',
-      colorMood: 'black, white, neutral',
+      colorMood: 'image-aware',
       coverImage: heroImage,
     },
     creator: {
@@ -282,9 +338,11 @@ const fallbackFunnel = ({ currentData = {}, niche, problem, audience, sourceProd
     }),
     cta: {
       barTagline: `Simple ${niche} routine`,
+      barLabel: 'Find Services',
       finalHeadline: `Ready for your ${niche} transformation?`,
       finalSubtext: `Start with a focused plan for ${problem}.`,
       finalLabel: rules.ctaStyle,
+      finePrint: 'Provider pricing and availability may vary.',
     },
     reusableAssets: {
       hooks: [],
@@ -349,8 +407,34 @@ const normalizeAiFunnel = ({
       sourceProducts?.[0]?.thumbnail_url
     ) || FALLBACK_HERO
 
+  const fallbackTheme = getFallbackTheme(niche)
+
+  const generatedTheme =
+    aiData?.theme && typeof aiData.theme === 'object'
+      ? {
+          primary: aiData.theme.primary || fallbackTheme.primary,
+          secondary: aiData.theme.secondary || fallbackTheme.secondary,
+          accent: aiData.theme.accent || fallbackTheme.accent,
+          surface: aiData.theme.surface || fallbackTheme.surface,
+          text: aiData.theme.text || fallbackTheme.text,
+          buttonText: aiData.theme.buttonText || fallbackTheme.buttonText,
+          mood: aiData.theme.mood || fallbackTheme.mood,
+        }
+      : fallbackTheme
+
   return {
     ...fallback,
+
+    theme: generatedTheme,
+    funnelMode: aiData?.funnelMode || fallback?.funnelMode || 'service',
+    sectionLabels:
+      aiData?.sectionLabels && typeof aiData.sectionLabels === 'object'
+        ? aiData.sectionLabels
+        : fallback.sectionLabels,
+    ctaStrategy:
+      aiData?.ctaStrategy && typeof aiData.ctaStrategy === 'object'
+        ? aiData.ctaStrategy
+        : fallback.ctaStrategy,
 
     template: {
       ...fallback.template,
@@ -401,9 +485,11 @@ const normalizeAiFunnel = ({
     cta: aiData?.finalCta
       ? {
           barTagline: fallback.cta.barTagline,
+          barLabel: fallback.cta.barLabel || 'Find Services',
           finalHeadline: aiData.finalCta.headline || fallback.cta.finalHeadline,
           finalSubtext: aiData.finalCta.subtext || fallback.cta.finalSubtext,
           finalLabel: aiData.finalCta.ctaLabel || rules.ctaStyle,
+          finePrint: fallback.cta.finePrint,
         }
       : fallback.cta,
 
@@ -452,7 +538,7 @@ export default async function handler(req, res) {
         templateId: `${nicheCategory}-creator-funnel`,
         visualTone: rules.visualTone || `${nicheCategory} focused creator funnel`,
         layoutStyle: 'mobile-first creator funnel',
-        colorMood: 'black, white, neutral',
+        colorMood: 'image-aware',
       }
 
     const privatePrompt = buildFunnelPrompt({
@@ -506,6 +592,11 @@ Generate product/service cards dynamically for the selected niche.
 Do NOT use generic skincare products unless the selected niche is skincare.
 For Braids, cards must be braid services, braid prep, braid maintenance, protective style care, scalp comfort, edge care, or braid longevity.
 
+THEME RULE:
+You MUST return a populated "theme" object with valid HEX colors.
+Do not return empty strings for theme.
+Theme must match the selected niche and visual mood.
+
 Return ONLY valid JSON.
 `
 
@@ -540,7 +631,7 @@ Return ONLY valid JSON.
           audience,
           sourceProducts: sourceData.products,
           visuals: sourceData.visuals,
-        }),
+        })
       )
     }
 
@@ -561,7 +652,7 @@ Return ONLY valid JSON.
           audience,
           sourceProducts: sourceData.products,
           visuals: sourceData.visuals,
-        }),
+        })
       )
     }
 
@@ -578,8 +669,6 @@ Return ONLY valid JSON.
       visuals: sourceData.visuals,
     })
 
-    console.log('FINAL HERO IMAGE:', generatedFunnel?.hero?.backgroundImage)
-
     return res.status(200).json(generatedFunnel)
   } catch (error) {
     const { currentData = {}, generationInputs = {} } = req.body || {}
@@ -590,7 +679,7 @@ Return ONLY valid JSON.
         niche: generationInputs?.niche || 'Beauty',
         problem: generationInputs?.problem || 'beauty challenge',
         audience: generationInputs?.audience || 'beauty shoppers',
-      }),
+      })
     )
   }
 }
