@@ -12,8 +12,41 @@ function setCorsHeaders(res) {
 }
 
 function pickRandom(items = []) {
-  if (!Array.isArray(items) || items.length === 0) return null
+  if (!Array.isArray(items) || items.length === 0) {
+    return null
+  }
+
   return items[Math.floor(Math.random() * items.length)]
+}
+
+async function getPlatformAvatar() {
+  const avatarResult = await supabase
+    .from('platform_talking_heads')
+    .select('*')
+    .eq('active', true)
+    .order('priority', { ascending: true })
+
+  const avatars = avatarResult.data || []
+
+  if (avatars.length === 0) {
+    return null
+  }
+
+  return pickRandom(avatars)
+}
+
+function mergeTalkingHeadWithAvatar(talkingHead, avatar) {
+  return {
+    ...talkingHead,
+    avatar_id: avatar?.id || null,
+    avatar_name: avatar?.name || null,
+    avatar_gender: avatar?.gender || null,
+    avatar_url:
+      talkingHead?.thumbnail_url ||
+      talkingHead?.headshot_url ||
+      avatar?.avatar_url ||
+      null,
+  }
 }
 
 export default async function handler(req, res) {
@@ -55,55 +88,36 @@ export default async function handler(req, res) {
     }
 
     if (creatorTalkingHead) {
+      const avatar = await getPlatformAvatar()
+
       return res.status(200).json({
         success: true,
         showTalkingHead: true,
         source: 'creator',
-        talkingHead: {
-          ...creatorTalkingHead,
-          avatar_url:
-            creatorTalkingHead.headshot_url ||
-            creatorTalkingHead.thumbnail_url ||
-            creatorTalkingHead.avatar_url ||
-            null,
-        },
+        talkingHead: mergeTalkingHeadWithAvatar(creatorTalkingHead, avatar),
       })
     }
 
-    const [templateResult, avatarResult] = await Promise.all([
-      supabase
-        .from('talking_head_templates')
-        .select('*')
-        .eq('career_key', career_key)
-        .eq('service_slug', service_slug)
-        .eq('style_slug', style_slug)
-        .eq('active', true)
-        .eq('approval_status', 'approved')
-        .order('priority', { ascending: true })
-        .limit(1)
-        .maybeSingle(),
-
-      supabase
-        .from('platform_talking_heads')
-        .select('*')
-        .eq('active', true)
-        .order('priority', { ascending: true }),
-    ])
-
-    const platformAvatar = pickRandom(avatarResult.data || [])
+    const templateResult = await supabase
+      .from('talking_head_templates')
+      .select('*')
+      .eq('career_key', career_key)
+      .eq('service_slug', service_slug)
+      .eq('style_slug', style_slug)
+      .eq('active', true)
+      .eq('approval_status', 'approved')
+      .order('priority', { ascending: true })
+      .limit(1)
+      .maybeSingle()
 
     if (templateResult.data) {
+      const avatar = await getPlatformAvatar()
+
       return res.status(200).json({
         success: true,
         showTalkingHead: true,
         source: 'platform_default',
-        talkingHead: {
-          ...templateResult.data,
-          avatar_url: platformAvatar?.avatar_url || null,
-          avatar_name: platformAvatar?.name || 'AI Beauty Guide',
-          avatar_gender: platformAvatar?.gender || null,
-        },
-        errors: [templateResult.error, avatarResult.error].filter(Boolean),
+        talkingHead: mergeTalkingHeadWithAvatar(templateResult.data, avatar),
       })
     }
 
@@ -112,7 +126,6 @@ export default async function handler(req, res) {
       showTalkingHead: false,
       source: 'none',
       talkingHead: null,
-      errors: [templateResult.error, avatarResult.error].filter(Boolean),
     })
   } catch (error) {
     console.error('GET TALKING HEAD API ERROR:', error)
