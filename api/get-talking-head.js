@@ -11,6 +11,11 @@ function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 }
 
+function pickRandom(items = []) {
+  if (!Array.isArray(items) || items.length === 0) return null
+  return items[Math.floor(Math.random() * items.length)]
+}
+
 export default async function handler(req, res) {
   setCorsHeaders(res)
 
@@ -54,28 +59,51 @@ export default async function handler(req, res) {
         success: true,
         showTalkingHead: true,
         source: 'creator',
-        talkingHead: creatorTalkingHead,
+        talkingHead: {
+          ...creatorTalkingHead,
+          avatar_url:
+            creatorTalkingHead.headshot_url ||
+            creatorTalkingHead.thumbnail_url ||
+            creatorTalkingHead.avatar_url ||
+            null,
+        },
       })
     }
 
-    const templateResult = await supabase
-      .from('talking_head_templates')
-      .select('*')
-      .eq('career_key', career_key)
-      .eq('service_slug', service_slug)
-      .eq('style_slug', style_slug)
-      .eq('active', true)
-      .eq('approval_status', 'approved')
-      .order('priority', { ascending: true })
-      .limit(1)
-      .maybeSingle()
+    const [templateResult, avatarResult] = await Promise.all([
+      supabase
+        .from('talking_head_templates')
+        .select('*')
+        .eq('career_key', career_key)
+        .eq('service_slug', service_slug)
+        .eq('style_slug', style_slug)
+        .eq('active', true)
+        .eq('approval_status', 'approved')
+        .order('priority', { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+
+      supabase
+        .from('platform_talking_heads')
+        .select('*')
+        .eq('active', true)
+        .order('priority', { ascending: true }),
+    ])
+
+    const platformAvatar = pickRandom(avatarResult.data || [])
 
     if (templateResult.data) {
       return res.status(200).json({
         success: true,
         showTalkingHead: true,
         source: 'platform_default',
-        talkingHead: templateResult.data,
+        talkingHead: {
+          ...templateResult.data,
+          avatar_url: platformAvatar?.avatar_url || null,
+          avatar_name: platformAvatar?.name || 'AI Beauty Guide',
+          avatar_gender: platformAvatar?.gender || null,
+        },
+        errors: [templateResult.error, avatarResult.error].filter(Boolean),
       })
     }
 
@@ -84,6 +112,7 @@ export default async function handler(req, res) {
       showTalkingHead: false,
       source: 'none',
       talkingHead: null,
+      errors: [templateResult.error, avatarResult.error].filter(Boolean),
     })
   } catch (error) {
     console.error('GET TALKING HEAD API ERROR:', error)
